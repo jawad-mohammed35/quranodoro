@@ -1,0 +1,128 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  /* Light theme — warm off-white, pastel green, light olive */
+  --background: #faf8f3;
+  --foreground: #333f30;
+  --card: #ffffff;
+  --card-foreground: #333f30;
+  --muted: #f1eee6;
+  --muted-foreground: #7b8474;
+  --primary: #6b9071;
+  --primary-foreground: #ffffff;
+  --primary-soft: #dfeade;
+  --accent: #a8ab7c;
+  --accent-foreground: #4a4c34;
+  --accent-soft: #f0f0dd;
+  --border: #e7e3d7;
+  --ring: #6b9071;
+  --danger: #c07b6d;
+  --shadow-card: 0 1px 2px rgb(51 63 48 / 0.04), 0 4px 16px rgb(51 63 48 / 0.06);
+}
+
+.dark {
+  /* Dark theme — charcoal, muted pastel green, soft gray cards */
+  --background: #1e211e;
+  --foreground: #dce1d6;
+  --card: #272b26;
+  --card-foreground: #dce1d6;
+  --muted: #2f342e;
+  --muted-foreground: #99a191;
+  --primary: #8fb996;
+  --primary-foreground: #1c221c;
+  --primary-soft: #313b32;
+  --accent: #aaad83;
+  --accent-foreground: #e6e7d2;
+  --accent-soft: #34372a;
+  --border: #383d37;
+  --ring: #8fb996;
+  --danger: #cf9186;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.2), 0 4px 16px rgb(0 0 0 / 0.15);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-soft: var(--accent-soft);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-arabic: var(--font-amiri);
+  --radius-card: 1.25rem;
+  --shadow-card: var(--shadow-card);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Arabic script selection (see Settings → Appearance). */
+html[data-arabic-font="indopak"] {
+  --font-arabic: var(--font-indopak);
+}
+html[data-arabic-font="indopak"] .font-arabic {
+  line-height: 2.1; /* Nastaliq needs generous vertical room */
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+::selection {
+  background: var(--primary-soft);
+}
+
+/* Subtle scrollbars that match the palette */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+/* Range input styling for volume slider */
+input[type="range"] {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--muted);
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: var(--primary);
+  cursor: pointer;
+  border: none;
+  transition: transform 120ms ease;
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: var(--primary);
+  cursor: pointer;
+  border: none;
+}
