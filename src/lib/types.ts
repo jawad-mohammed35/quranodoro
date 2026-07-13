@@ -98,7 +98,7 @@ export interface Inspiration {
   reference: string;
 }
 
-export type ArabicFontId = "amiri" | "indopak";
+import type { UILanguage } from "@/lib/i18n/types";
 
 export interface UserSettings {
   autoStartNextSession: boolean;
@@ -110,8 +110,8 @@ export interface UserSettings {
   favoriteSurahs: number[];
   /** Name shown in the dashboard greeting. */
   displayName: string;
-  /** Script style for Arabic text (Quran, reminders, surah names). */
-  arabicFontId: ArabicFontId;
+  /** Interface language (Quran text and audio are not localized). */
+  uiLanguage: UILanguage;
 }
 
 export interface DailyStat {

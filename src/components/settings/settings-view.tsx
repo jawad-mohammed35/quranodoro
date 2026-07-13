@@ -3,7 +3,9 @@
 import { useTheme } from "next-themes";
 import { RECITERS } from "@/data/reciters";
 import { SURAHS } from "@/data/surahs";
-import type { ArabicFontId } from "@/lib/types";
+import { UI_LANGUAGES } from "@/lib/i18n/types";
+import type { UILanguage } from "@/lib/i18n/types";
+import { useTranslation } from "@/lib/i18n";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useMounted } from "@/hooks/use-mounted";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -43,34 +45,32 @@ export function SettingsView() {
   const mounted = useMounted();
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   const settings = useSettingsStore();
 
   if (!mounted) {
-    return <PageHeader title="Settings" description="Loading…" />;
+    return <PageHeader title={t("settings.title")} description={t("common.loading")} />;
   }
 
   return (
     <>
-      <PageHeader
-        title="Settings"
-        description="Tune Quranodoro to your rhythm. Everything saves automatically."
-      />
+      <PageHeader title={t("settings.title")} description={t("settings.description")} />
 
       <div className="flex flex-col gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Profile</CardTitle>
+            <CardTitle>{t("settings.profile")}</CardTitle>
           </CardHeader>
           <CardContent className="divide-y divide-border">
             <SettingRow
-              label="Your name"
-              description="Used for the greeting on your dashboard."
+              label={t("settings.yourName")}
+              description={t("settings.yourNameHint")}
               htmlFor="settings-name"
             >
               <Input
                 id="settings-name"
-                placeholder="e.g. Jawad"
+                placeholder={t("settings.yourNamePlaceholder")}
                 maxLength={40}
                 value={settings.displayName}
                 onChange={(e) => settings.setSetting("displayName", e.target.value)}
@@ -81,12 +81,12 @@ export function SettingsView() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Appearance</CardTitle>
+            <CardTitle>{t("settings.appearance")}</CardTitle>
           </CardHeader>
           <CardContent className="divide-y divide-border">
             <SettingRow
-              label="Theme"
-              description="Light is warm and pastel; dark is soft charcoal. Light is the default."
+              label={t("settings.theme")}
+              description={t("settings.themeHint")}
               htmlFor="theme-select"
             >
               <Select
@@ -94,47 +94,41 @@ export function SettingsView() {
                 value={theme ?? "light"}
                 onChange={(e) => setTheme(e.target.value)}
               >
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-                <option value="system">Match system</option>
+                <option value="light">{t("settings.themeLight")}</option>
+                <option value="dark">{t("settings.themeDark")}</option>
+                <option value="system">{t("settings.themeSystem")}</option>
               </Select>
             </SettingRow>
             <SettingRow
-              label="Arabic script"
-              description="Changes how Quran text and surah names are rendered across the app."
-              htmlFor="settings-arabic-font"
+              label={t("settings.language")}
+              description={t("settings.languageHint")}
+              htmlFor="settings-language"
             >
-              <div className="flex flex-col gap-2">
-                <Select
-                  id="settings-arabic-font"
-                  value={settings.arabicFontId}
-                  onChange={(e) =>
-                    settings.setSetting("arabicFontId", e.target.value as ArabicFontId)
-                  }
-                >
-                  <option value="amiri">Uthmani — Amiri (default)</option>
-                  <option value="indopak">IndoPak — Nastaliq</option>
-                </Select>
-                <p
-                  className="rounded-xl bg-muted px-3 py-2 text-center font-arabic text-xl"
-                  dir="rtl"
-                  lang="ar"
-                >
-                  بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
-                </p>
-              </div>
+              <Select
+                id="settings-language"
+                value={settings.uiLanguage}
+                onChange={(e) =>
+                  settings.setSetting("uiLanguage", e.target.value as UILanguage)
+                }
+              >
+                {UI_LANGUAGES.map((lang) => (
+                  <option key={lang.id} value={lang.id}>
+                    {lang.nativeLabel}
+                  </option>
+                ))}
+              </Select>
             </SettingRow>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Pomodoro</CardTitle>
+            <CardTitle>{t("settings.pomodoro")}</CardTitle>
           </CardHeader>
           <CardContent className="divide-y divide-border">
             <SettingRow
-              label="Auto-start next session"
-              description="Breaks and focus sessions begin automatically when the previous one ends."
+              label={t("settings.autoStartNext")}
+              description={t("settings.autoStartHint")}
               htmlFor="settings-auto-start"
             >
               <div className="flex justify-end">
@@ -150,14 +144,12 @@ export function SettingsView() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Quran audio</CardTitle>
-            <CardDescription>
-              Recitation starts automatically with each focus session and pauses during breaks.
-            </CardDescription>
+            <CardTitle>{t("settings.quranAudio")}</CardTitle>
+            <CardDescription>{t("settings.quranAudioHint")}</CardDescription>
           </CardHeader>
           <CardContent className="divide-y divide-border">
             <SettingRow
-              label="Play Quran during focus"
+              label={t("settings.playQuranDuringFocus")}
               htmlFor="settings-play-quran"
             >
               <div className="flex justify-end">
@@ -168,7 +160,7 @@ export function SettingsView() {
                 />
               </div>
             </SettingRow>
-            <SettingRow label="Reciter" htmlFor="settings-reciter">
+            <SettingRow label={t("settings.reciter")} htmlFor="settings-reciter">
               <Select
                 id="settings-reciter"
                 value={settings.reciterId}
@@ -181,7 +173,7 @@ export function SettingsView() {
                 ))}
               </Select>
             </SettingRow>
-            <SettingRow label="Surah" htmlFor="settings-surah">
+            <SettingRow label={t("settings.surah")} htmlFor="settings-surah">
               <Select
                 id="settings-surah"
                 value={settings.surahNumber}
@@ -195,7 +187,7 @@ export function SettingsView() {
               </Select>
             </SettingRow>
             <SettingRow
-              label={`Volume · ${Math.round(settings.volume * 100)}%`}
+              label={t("settings.volume", { percent: Math.round(settings.volume * 100) })}
               htmlFor="settings-volume"
             >
               <input
@@ -207,7 +199,7 @@ export function SettingsView() {
                 className="w-full"
                 value={settings.volume}
                 onChange={(e) => settings.setSetting("volume", Number(e.target.value))}
-                aria-label="Playback volume"
+                aria-label={t("settings.volumeAria")}
               />
             </SettingRow>
           </CardContent>
@@ -215,12 +207,12 @@ export function SettingsView() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Favorites</CardTitle>
+            <CardTitle>{t("settings.favorites")}</CardTitle>
           </CardHeader>
           <CardContent className="divide-y divide-border">
             <SettingRow
-              label="Favorite reciter"
-              description="Shown on your dashboard."
+              label={t("settings.favoriteReciter")}
+              description={t("settings.favoriteReciterHint")}
               htmlFor="settings-fav-reciter"
             >
               <Select
@@ -230,7 +222,7 @@ export function SettingsView() {
                   settings.setSetting("favoriteReciterId", e.target.value || null)
                 }
               >
-                <option value="">None</option>
+                <option value="">{t("common.none")}</option>
                 {RECITERS.map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.name}
@@ -240,10 +232,9 @@ export function SettingsView() {
             </SettingRow>
             <div className="flex flex-col gap-3 py-4 last:pb-0">
               <div>
-                <Label>Favorite surahs</Label>
+                <Label>{t("settings.favoriteSurahs")}</Label>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  Search and select below, or tap the heart on any surah in the
-                  Quran Player.
+                  {t("settings.favoriteSurahsHint")}
                 </p>
               </div>
               <FavoriteSurahsPicker />
@@ -253,22 +244,18 @@ export function SettingsView() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Account</CardTitle>
+            <CardTitle>{t("settings.account")}</CardTitle>
           </CardHeader>
           <CardContent>
             {user ? (
               <p className="text-sm text-muted-foreground">
-                Signed in as <span className="font-medium text-foreground">{user.email}</span>.
-                Your data syncs automatically.
+                {t("settings.signedInAs", { email: user.email ?? "" })}
               </p>
             ) : (
               <div className="flex flex-col items-start gap-3">
-                <p className="text-sm text-muted-foreground">
-                  You&apos;re using Quranodoro on this device only. Create an
-                  account to back up and sync your progress.
-                </p>
+                <p className="text-sm text-muted-foreground">{t("settings.localOnly")}</p>
                 <Button onClick={() => (window.location.href = "/register")}>
-                  Create an account
+                  {t("settings.createAccount")}
                 </Button>
               </div>
             )}

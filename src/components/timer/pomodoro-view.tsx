@@ -7,6 +7,7 @@ import { useSettingsStore, getPresetById } from "@/stores/settings-store";
 import { useFarmStore } from "@/stores/farm-store";
 import { getTreeType, GROWTH_STAGES, stageForGp, growthPointsForMinutes } from "@/data/trees";
 import { useMounted } from "@/hooks/use-mounted";
+import { useTranslation } from "@/lib/i18n";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -21,6 +22,7 @@ function CycleDots() {
   const preset = useTimerStore((s) => s.preset);
   const selectedPresetId = useSettingsStore((s) => s.selectedPresetId);
   const customPresets = useSettingsStore((s) => s.customPresets);
+  const { t } = useTranslation();
 
   const active = preset ?? getPresetById(selectedPresetId, customPresets);
   const total = active.sessionsBeforeLongBreak;
@@ -28,7 +30,10 @@ function CycleDots() {
   return (
     <div
       className="flex items-center justify-center gap-2"
-      aria-label={`${focusCountInCycle} of ${total} focus sessions until the long break`}
+      aria-label={t("pomodoro.focusSessionsUntilLongBreak", {
+        current: focusCountInCycle,
+        total,
+      })}
     >
       {Array.from({ length: total }).map((_, i) => (
         <span
@@ -40,7 +45,7 @@ function CycleDots() {
           aria-hidden
         />
       ))}
-      <span className="ml-1 text-xs text-muted-foreground">until long break</span>
+      <span className="ml-1 text-xs text-muted-foreground">{t("pomodoro.untilLongBreak")}</span>
     </div>
   );
 }
@@ -52,6 +57,7 @@ function GrowingTreeHint() {
   const phase = useTimerStore((s) => s.phase);
   const selectedPresetId = useSettingsStore((s) => s.selectedPresetId);
   const customPresets = useSettingsStore((s) => s.customPresets);
+  const { t } = useTranslation();
 
   const tree = trees.find((t) => t.id === activeTreeId);
   const growing = status === "running" && phase === "focus";
@@ -62,11 +68,11 @@ function GrowingTreeHint() {
     return (
       <p className="text-center text-sm text-muted-foreground">
         <Sprout className="mr-1 inline h-4 w-4" aria-hidden />
-        No tree is growing.{" "}
+        {t("pomodoro.noTreeGrowing")}{" "}
         <Link href="/farm" className="font-medium text-primary underline-offset-2 hover:underline">
-          Plant one in your farm
+          {t("pomodoro.plantInFarm")}
         </Link>{" "}
-        to earn +{gpPerSession} GP per session.
+        {t("pomodoro.earnGpPerSession", { gp: gpPerSession })}
       </p>
     );
   }
@@ -76,11 +82,13 @@ function GrowingTreeHint() {
 
   return (
     <p className="text-center text-sm text-muted-foreground">
-      <span aria-hidden>{stage.emoji}</span> Your {type.name} ({stage.name}){" "}
+      <span aria-hidden>{stage.emoji}</span> {type.name} ({stage.name}){" "}
       {growing ? (
-        <span className="font-medium text-primary">is growing — finish to earn +{gpPerSession} GP</span>
+        <span className="font-medium text-primary">
+          {t("pomodoro.treeGrowing", { gp: gpPerSession })}
+        </span>
       ) : (
-        <>earns +{gpPerSession} GP per completed focus session</>
+        <>{t("pomodoro.earnsGpPerSession", { gp: gpPerSession })}</>
       )}
     </p>
   );
@@ -88,6 +96,7 @@ function GrowingTreeHint() {
 
 export function PomodoroView() {
   const mounted = useMounted();
+  const { t } = useTranslation();
 
   const status = useTimerStore((s) => s.status);
   const phase = useTimerStore((s) => s.phase);
@@ -100,10 +109,7 @@ export function PomodoroView() {
 
   return (
     <>
-      <PageHeader
-        title="Pomodoro"
-        description="Focus with recitation, rest with intention. Completed sessions grow your date farm."
-      />
+      <PageHeader title={t("pomodoro.title")} description={t("pomodoro.description")} />
 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <Card>
@@ -127,7 +133,7 @@ export function PomodoroView() {
             <div className="flex flex-col gap-3 border-t border-border pt-4">
               <div className="flex items-center justify-between gap-4">
                 <label htmlFor="auto-start" className="text-sm">
-                  Auto-start next session
+                  {t("pomodoro.autoStartNext")}
                 </label>
                 <Switch
                   id="auto-start"
@@ -137,7 +143,7 @@ export function PomodoroView() {
               </div>
               <div className="flex items-center justify-between gap-4">
                 <label htmlFor="play-quran" className="text-sm">
-                  Play Quran during focus
+                  {t("pomodoro.playQuranDuringFocus")}
                 </label>
                 <Switch
                   id="play-quran"
@@ -152,7 +158,7 @@ export function PomodoroView() {
         <div className="flex flex-col gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Recitation</CardTitle>
+              <CardTitle>{t("pomodoro.recitation")}</CardTitle>
             </CardHeader>
             <CardContent>
               <PlayerControls />
@@ -163,7 +169,7 @@ export function PomodoroView() {
 
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle>Presets</CardTitle>
+          <CardTitle>{t("pomodoro.presets")}</CardTitle>
         </CardHeader>
         <CardContent>{mounted && <PresetManager />}</CardContent>
       </Card>

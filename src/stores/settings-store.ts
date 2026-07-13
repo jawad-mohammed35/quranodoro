@@ -3,8 +3,10 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { PomodoroPreset, UserSettings } from "@/lib/types";
+import type { TasbihCompletion } from "@/stores/tasbih-store";
 import { BUILT_IN_PRESETS, DEFAULT_PRESET_ID } from "@/data/presets";
 import { DEFAULT_RECITER_ID } from "@/data/reciters";
+import { DEFAULT_UI_LANGUAGE } from "@/lib/i18n/types";
 import { uid } from "@/lib/utils";
 
 interface SettingsState extends UserSettings {
@@ -30,10 +32,12 @@ export type SettingsSnapshot = Pick<
   | "favoriteReciterId"
   | "favoriteSurahs"
   | "displayName"
-  | "arabicFontId"
+  | "uiLanguage"
   | "selectedPresetId"
   | "customPresets"
->;
+> & {
+  tasbihCompletedSessions?: TasbihCompletion[];
+};
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
@@ -46,7 +50,7 @@ export const useSettingsStore = create<SettingsState>()(
       favoriteReciterId: null,
       favoriteSurahs: [],
       displayName: "",
-      arabicFontId: "amiri",
+      uiLanguage: DEFAULT_UI_LANGUAGE,
       selectedPresetId: DEFAULT_PRESET_ID,
       customPresets: [],
 

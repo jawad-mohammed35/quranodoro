@@ -22,6 +22,7 @@ import {
   lastNMonths,
 } from "@/stores/sessions-store";
 import { useMounted } from "@/hooks/use-mounted";
+import { useTranslation } from "@/lib/i18n";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { formatDuration } from "@/lib/utils";
@@ -65,6 +66,7 @@ function ChartTooltip({
 
 export function AnalyticsView() {
   const mounted = useMounted();
+  const { t } = useTranslation();
   const sessions = useSessionsStore((s) => s.sessions);
 
   const primary = useCssVar("--primary", "#6b9071");
@@ -121,7 +123,7 @@ export function AnalyticsView() {
   } as const;
 
   if (!mounted) {
-    return <PageHeader title="Analytics" description="Loading your statistics…" />;
+    return <PageHeader title={t("analytics.title")} description={t("common.loading")} />;
   }
 
   const weekMinutes = weekly.reduce((sum, d) => sum + d.focusMinutes, 0);
@@ -130,21 +132,21 @@ export function AnalyticsView() {
   return (
     <>
       <PageHeader
-        title="Analytics"
-        description="Your focus, visualized. All times count completed focus sessions only."
+        title={t("analytics.title")}
+        description={t("analytics.description")}
       />
 
       <div className="flex flex-col gap-6">
         {/* Headline numbers */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {[
-            { label: "This week", value: formatDuration(weekMinutes) },
-            { label: "Pomodoros this week", value: String(weekPomodoros) },
+            { label: t("dashboard.thisWeek"), value: formatDuration(weekMinutes) },
+            { label: t("analytics.pomodoroCount"), value: String(weekPomodoros) },
             {
-              label: "Avg session length",
+              label: t("analytics.avgSession"),
               value: `${Math.round(averageSessionMinutes(sessions))}m`,
             },
-            { label: "Current streak", value: `${currentStreak(sessions)}d` },
+            { label: t("analytics.currentStreak"), value: `${currentStreak(sessions)}d` },
           ].map((stat) => (
             <Card key={stat.label}>
               <CardContent className="p-5">
@@ -275,10 +277,7 @@ export function AnalyticsView() {
         </Card>
 
         {sessions.length === 0 && (
-          <p className="text-center text-sm text-muted-foreground">
-            No sessions yet — complete your first Pomodoro and your charts will
-            come to life.
-          </p>
+          <p className="text-center text-sm text-muted-foreground">{t("analytics.noData")}</p>
         )}
       </div>
     </>

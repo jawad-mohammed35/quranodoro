@@ -8,6 +8,7 @@ import {
 } from "@/stores/settings-store";
 import { useSessionsStore } from "@/stores/sessions-store";
 import { useFarmStore } from "@/stores/farm-store";
+import { useTasbihStore } from "@/stores/tasbih-store";
 
 /**
  * Cloud sync strategy
@@ -37,9 +38,10 @@ function settingsSnapshot(): SettingsSnapshot {
     favoriteReciterId: s.favoriteReciterId,
     favoriteSurahs: s.favoriteSurahs,
     displayName: s.displayName,
-    arabicFontId: s.arabicFontId,
+    uiLanguage: s.uiLanguage,
     selectedPresetId: s.selectedPresetId,
     customPresets: s.customPresets,
+    tasbihCompletedSessions: useTasbihStore.getState().completedSessions,
   };
 }
 
@@ -91,7 +93,14 @@ export async function pullFromCloud(supabase: SupabaseClient, userId: string) {
 
   if (cloudHasState) {
     if (Object.keys(state.settings ?? {}).length > 0) {
-      useSettingsStore.getState().hydrateFromCloud(state.settings as Partial<SettingsSnapshot>);
+      const cloudSettings = state.settings as Partial<SettingsSnapshot> & {
+        arabicFontId?: string;
+      };
+      const { arabicFontId: _legacy, tasbihCompletedSessions, ...settings } = cloudSettings;
+      useSettingsStore.getState().hydrateFromCloud(settings);
+      if (tasbihCompletedSessions) {
+        useTasbihStore.getState().hydrateFromCloud({ completedSessions: tasbihCompletedSessions });
+      }
     }
     const farm = state.farm as Partial<FarmSnapshot>;
     if (farm?.trees) {
@@ -155,6 +164,7 @@ export function startSync(supabase: SupabaseClient, userId: string): () => void 
 
   const unsubSettings = useSettingsStore.subscribe(queueStatePush);
   const unsubFarm = useFarmStore.subscribe(queueStatePush);
+  const unsubTasbih = useTasbihStore.subscribe(queueStatePush);
 
   // Sessions are append-only: push new rows as they appear.
   let knownCount = useSessionsStore.getState().sessions.length;
@@ -173,6 +183,7 @@ export function startSync(supabase: SupabaseClient, userId: string): () => void 
     if (stateTimeout) clearTimeout(stateTimeout);
     unsubSettings();
     unsubFarm();
+    unsubTasbih();
     unsubSessions();
   };
 }

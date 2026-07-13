@@ -18,6 +18,7 @@ import {
 import { useFarmStore } from "@/stores/farm-store";
 import { useTimerStore } from "@/stores/timer-store";
 import { useMounted } from "@/hooks/use-mounted";
+import { useTranslation } from "@/lib/i18n";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ function ActiveTreeCard({ tree }: { tree: FarmTree }) {
   const timerStatus = useTimerStore((s) => s.status);
   const timerPhase = useTimerStore((s) => s.phase);
   const growing = timerStatus === "running" && timerPhase === "focus";
+  const { t } = useTranslation();
 
   const type = getTreeType(tree.typeId);
   const stageIndex = stageForGp(tree.gp, type.gpMultiplier);
@@ -40,11 +42,9 @@ function ActiveTreeCard({ tree }: { tree: FarmTree }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Now growing</CardTitle>
+        <CardTitle>{t("farm.nowGrowing")}</CardTitle>
         <CardDescription>
-          {growing
-            ? "Your tree is soaking up this focus session."
-            : "Start a focus session to keep this tree growing."}
+          {growing ? t("farm.growingActive") : t("farm.growingIdle")}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col items-center gap-4">
@@ -52,15 +52,23 @@ function ActiveTreeCard({ tree }: { tree: FarmTree }) {
         <div className="text-center">
           <p className="font-semibold">{type.name}</p>
           <p className="text-sm text-muted-foreground">
-            Stage {stageIndex + 1} of {GROWTH_STAGES.length} — {stage.name}
+            {t("farm.stageOf", {
+              current: stageIndex + 1,
+              total: GROWTH_STAGES.length,
+              name: stage.name,
+            })}
           </p>
         </div>
         <div className="w-full max-w-sm">
-          <Progress value={progress} aria-label="Progress to next growth stage" />
+          <Progress value={progress} aria-label={t("farm.progressAria")} />
           <p className="mt-1.5 text-center text-xs tabular-nums text-muted-foreground">
             {nextThreshold !== null
-              ? `${tree.gp} / ${nextThreshold} GP to ${GROWTH_STAGES[stageIndex + 1].name}`
-              : "Fully grown!"}
+              ? t("farm.gpToNext", {
+                  current: tree.gp,
+                  next: nextThreshold,
+                  stage: GROWTH_STAGES[stageIndex + 1].name,
+                })
+              : t("farm.fullyGrown")}
           </p>
         </div>
         {!growing && (
@@ -68,7 +76,7 @@ function ActiveTreeCard({ tree }: { tree: FarmTree }) {
             href="/pomodoro"
             className="mt-1 inline-flex h-8 items-center rounded-full bg-primary-soft px-4 text-sm font-medium transition-opacity hover:opacity-80"
           >
-            Start a focus session
+            {t("farm.startFocusSession")}
           </Link>
         )}
       </CardContent>
@@ -196,6 +204,7 @@ function Orchard() {
 
 export function FarmView() {
   const mounted = useMounted();
+  const { t } = useTranslation();
   const trees = useFarmStore((s) => s.trees);
   const activeTreeId = useFarmStore((s) => s.activeTreeId);
   const activeTree = trees.find((t) => t.id === activeTreeId);
@@ -203,14 +212,14 @@ export function FarmView() {
   return (
     <>
       <PageHeader
-        title="Date Farm"
-        description="Every focus session waters your farm. Grow one tree at a time and build your orchard."
+        title={t("farm.title")}
+        description={t("farm.description")}
       >
         <Link
           href="/about-farm"
           className="text-sm font-medium text-primary underline-offset-4 hover:underline"
         >
-          How growth works →
+          {t("farm.learnMore")}
         </Link>
       </PageHeader>
 
@@ -220,7 +229,7 @@ export function FarmView() {
 
           <section aria-label="Your orchard">
             <h2 className="mb-3 text-lg font-semibold">
-              Your orchard{" "}
+              {t("farm.yourOrchard")}{" "}
               <span className="text-sm font-normal text-muted-foreground">
                 ({trees.filter((t) => t.maturedAt).length} mature · {trees.length} total)
               </span>

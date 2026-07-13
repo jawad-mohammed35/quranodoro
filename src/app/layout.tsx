@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Amiri, Noto_Nastaliq_Urdu } from "next/font/google";
+import { Geist, Geist_Mono, Amiri } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { AuthProvider } from "@/components/providers/auth-provider";
@@ -7,7 +7,7 @@ import { OnboardingGate } from "@/components/providers/onboarding-gate";
 import { AppShell } from "@/components/layout/app-shell";
 import { QuranAudioEngine } from "@/components/audio/quran-audio-engine";
 import { TimerTicker } from "@/components/timer/timer-ticker";
-import { ArabicFontApplier } from "@/components/providers/arabic-font-applier";
+import { LocaleApplier } from "@/components/providers/locale-applier";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,13 +21,6 @@ const geistMono = Geist_Mono({
 
 const amiri = Amiri({
   variable: "--font-amiri",
-  weight: ["400", "700"],
-  subsets: ["arabic"],
-});
-
-// IndoPak (Nastaliq) script option for Arabic text.
-const notoNastaliq = Noto_Nastaliq_Urdu({
-  variable: "--font-indopak",
   weight: ["400", "700"],
   subsets: ["arabic"],
 });
@@ -57,7 +50,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${amiri.variable} ${notoNastaliq.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${amiri.variable} h-full antialiased`}
     >
       <body className="min-h-full">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
@@ -65,7 +58,7 @@ export default function RootLayout({
             <OnboardingGate />
             <TimerTicker />
             <QuranAudioEngine />
-            <ArabicFontApplier />
+            <LocaleApplier />
             <AppShell>{children}</AppShell>
           </AuthProvider>
         </ThemeProvider>

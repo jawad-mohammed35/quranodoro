@@ -18,6 +18,7 @@ import { getReciter } from "@/data/reciters";
 import { GROWTH_STAGES, getTreeType, progressToNextStage, stageForGp } from "@/data/trees";
 import { useMounted } from "@/hooks/use-mounted";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useTranslation } from "@/lib/i18n";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -66,6 +67,7 @@ function StatCard({
 
 function TodaysFocusCard() {
   const sessions = useSessionsStore((s) => s.sessions);
+  const { t } = useTranslation();
   const today = new Date();
   const minutes = focusMinutesOn(sessions, today);
   const pomodoros = pomodorosOn(sessions, today);
@@ -83,7 +85,7 @@ function TodaysFocusCard() {
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft">
               <Clock className="h-5 w-5 text-primary" aria-hidden />
             </span>
-            Today&apos;s focus
+            {t("dashboard.todaysFocus")}
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -91,13 +93,15 @@ function TodaysFocusCard() {
             {formatDuration(minutes)}
           </p>
           <p className="text-sm text-muted-foreground">
-            {pomodoros} {pomodoros === 1 ? "Pomodoro" : "Pomodoros"} completed today
+            {pomodoros === 1
+              ? t("dashboard.pomodoroToday", { count: pomodoros })
+              : t("dashboard.pomodorosToday", { count: pomodoros })}
           </p>
           <Link
             href="/pomodoro"
             className="inline-flex h-10 w-fit items-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
           >
-            {pomodoros > 0 ? "Keep going" : "Start your first session"}
+            {pomodoros > 0 ? t("common.keepGoing") : t("common.startFirstSession")}
           </Link>
         </CardContent>
       </Card>
@@ -109,6 +113,7 @@ function FavoriteReciterCard() {
   const favoriteReciterId = useSettingsStore((s) => s.favoriteReciterId);
   const reciterId = useSettingsStore((s) => s.reciterId);
   const reciter = getReciter(favoriteReciterId ?? reciterId);
+  const { t } = useTranslation();
 
   return (
     <Card>
@@ -118,7 +123,7 @@ function FavoriteReciterCard() {
             <Headphones className="h-5 w-5 text-primary" aria-hidden />
           </span>
           <div>
-            <CardTitle>Favorite reciter</CardTitle>
+            <CardTitle>{t("dashboard.favoriteReciter")}</CardTitle>
             <CardDescription>{reciter.name}</CardDescription>
           </div>
         </div>
@@ -137,14 +142,17 @@ function WeeklySummary() {
   const sessions = useSessionsStore((s) => s.sessions);
   const week = lastNDays(sessions, 7);
   const max = Math.max(...week.map((d) => d.focusMinutes), 1);
+  const { t } = useTranslation();
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>This week</CardTitle>
+        <CardTitle>{t("dashboard.thisWeek")}</CardTitle>
         <CardDescription>
-          {formatDuration(week.reduce((sum, d) => sum + d.focusMinutes, 0))} focused ·{" "}
-          {week.reduce((sum, d) => sum + d.pomodoros, 0)} Pomodoros
+          {t("dashboard.weekSummary", {
+            focus: formatDuration(week.reduce((sum, d) => sum + d.focusMinutes, 0)),
+            pomodoros: week.reduce((sum, d) => sum + d.pomodoros, 0),
+          })}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -175,7 +183,7 @@ function WeeklySummary() {
           href="/analytics"
           className="mt-4 inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
         >
-          Full analytics →
+          {t("common.fullAnalytics")}
         </Link>
       </CardContent>
     </Card>
@@ -187,13 +195,17 @@ function ActiveTreeWidget() {
   const activeTreeId = useFarmStore((s) => s.activeTreeId);
   const tree = trees.find((t) => t.id === activeTreeId);
   const matureCount = trees.filter((t) => t.maturedAt).length;
+  const { t } = useTranslation();
 
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle>Date farm</CardTitle>
+        <CardTitle>{t("dashboard.dateFarm")}</CardTitle>
         <CardDescription>
-          {matureCount} mature {matureCount === 1 ? "tree" : "trees"} · {trees.length} planted
+          {t("dashboard.maturePlanted", {
+            mature: matureCount,
+            planted: trees.length,
+          })}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col items-center gap-3">
@@ -218,14 +230,14 @@ function ActiveTreeWidget() {
           })()
         ) : (
           <p className="py-4 text-center text-sm text-muted-foreground">
-            No tree is growing right now.
+            {t("dashboard.noTreeGrowing")}
           </p>
         )}
         <Link
           href="/farm"
           className="text-sm font-medium text-primary underline-offset-4 hover:underline"
         >
-          {tree ? "Visit your farm →" : "Plant a tree →"}
+          {tree ? t("common.visitFarm") : t("common.plantTree")}
         </Link>
       </CardContent>
     </Card>
@@ -235,6 +247,7 @@ function ActiveTreeWidget() {
 export function DashboardView() {
   const mounted = useMounted();
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   const sessions = useSessionsStore((s) => s.sessions);
   const displayName = useSettingsStore((s) => s.displayName);
@@ -247,52 +260,54 @@ export function DashboardView() {
   return (
     <>
       <PageHeader
-        title={greetingName ? `Assalamu alaikum, ${greetingName}` : "Assalamu alaikum"}
-        description="Here's how your focus is growing."
+        title={
+          greetingName
+            ? t("dashboard.titleWithName", { name: greetingName })
+            : t("dashboard.title")
+        }
+        description={t("dashboard.description")}
       >
         <Link
           href="/pomodoro"
           className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
         >
-          Start focusing
+          {t("common.startFocusing")}
         </Link>
       </PageHeader>
 
       {mounted && (
         <div className="flex flex-col gap-6">
-          {/* Today's focus (large) + supporting stats */}
           <div className="grid gap-4 lg:grid-cols-3">
             <TodaysFocusCard />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-2">
               <StatCard
                 index={1}
                 icon={Flame}
-                label="Current streak"
-                value={`${streak} ${streak === 1 ? "day" : "days"}`}
+                label={t("dashboard.currentStreak")}
+                value={`${streak} ${streak === 1 ? t("common.day") : t("common.days")}`}
               />
               <StatCard
                 index={2}
                 icon={Target}
-                label="Total Pomodoros"
+                label={t("dashboard.totalPomodoros")}
                 value={String(totalPomodoros(sessions))}
               />
               <StatCard
                 index={3}
                 icon={CalendarDays}
-                label="Total focus"
+                label={t("dashboard.totalFocus")}
                 value={formatDuration(totalFocusMinutes(sessions))}
               />
               <StatCard
                 index={4}
                 icon={TreePalm}
-                label="Orchard"
+                label={t("dashboard.orchard")}
                 value={String(trees.filter((t) => t.maturedAt).length)}
-                hint="mature trees"
+                hint={t("dashboard.matureTrees")}
               />
             </div>
           </div>
 
-          {/* This week + farm, then the reciter player beneath This week */}
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="flex flex-col gap-6 lg:col-span-2">
               <WeeklySummary />

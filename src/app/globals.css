@@ -69,13 +69,7 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Arabic script selection (see Settings → Appearance). */
-html[data-arabic-font="indopak"] {
-  --font-arabic: var(--font-indopak);
-}
-html[data-arabic-font="indopak"] .font-arabic {
-  line-height: 2.1; /* Nastaliq needs generous vertical room */
-}
+/* Arabic text uses the default Amiri (Uthmani) font via --font-arabic. */
 
 body {
   background: var(--background);

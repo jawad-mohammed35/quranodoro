@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   BookOpen,
+  CircleDot,
   Info,
   LayoutDashboard,
   LogIn,
@@ -23,23 +24,28 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers/auth-provider";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/lib/i18n";
+import type { TranslationKey } from "@/lib/i18n/translations/en";
 
 const NAV_ITEMS = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/pomodoro", label: "Pomodoro", icon: TimerIcon },
-  { href: "/quran", label: "Quran Player", icon: BookOpen },
-  { href: "/farm", label: "Date Farm", icon: TreePalm },
-  { href: "/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/about-farm", label: "About Date Farm", icon: Info },
-  { href: "/settings", label: "Settings", icon: Settings },
-  { href: "/about", label: "About Me", icon: User },
+  { href: "/", labelKey: "nav.dashboard" as TranslationKey, icon: LayoutDashboard },
+  { href: "/pomodoro", labelKey: "nav.pomodoro" as TranslationKey, icon: TimerIcon },
+  { href: "/quran", labelKey: "nav.quranPlayer" as TranslationKey, icon: BookOpen },
+  { href: "/tasbih", labelKey: "nav.tasbih" as TranslationKey, icon: CircleDot },
+  { href: "/farm", labelKey: "nav.dateFarm" as TranslationKey, icon: TreePalm },
+  { href: "/analytics", labelKey: "nav.analytics" as TranslationKey, icon: BarChart3 },
+  { href: "/about-farm", labelKey: "nav.aboutDateFarm" as TranslationKey, icon: Info },
+  { href: "/settings", labelKey: "nav.settings" as TranslationKey, icon: Settings },
+  { href: "/about", labelKey: "nav.aboutDeveloper" as TranslationKey, icon: User },
 ] as const;
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const { t } = useTranslation();
+
   return (
     <nav className="flex flex-col gap-1" aria-label="Main navigation">
-      {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+      {NAV_ITEMS.map(({ href, labelKey, icon: Icon }) => {
         const active = pathname === href;
         return (
           <Link
@@ -55,7 +61,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             )}
           >
             <Icon className="h-4.5 w-4.5 shrink-0" aria-hidden />
-            {label}
+            {t(labelKey)}
           </Link>
         );
       })}
@@ -65,6 +71,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 
 function AuthSection({ onNavigate }: { onNavigate?: () => void }) {
   const { user, profile, signOut } = useAuth();
+  const { t } = useTranslation();
 
   if (user) {
     return (
@@ -86,7 +93,7 @@ function AuthSection({ onNavigate }: { onNavigate?: () => void }) {
             onNavigate?.();
           }}
         >
-          <LogOut className="h-4 w-4" aria-hidden /> Sign out
+          <LogOut className="h-4 w-4" aria-hidden /> {t("common.signOut")}
         </Button>
       </div>
     );
@@ -98,7 +105,7 @@ function AuthSection({ onNavigate }: { onNavigate?: () => void }) {
       onClick={onNavigate}
       className="mx-3 flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
     >
-      <LogIn className="h-4 w-4" aria-hidden /> Sign in
+      <LogIn className="h-4 w-4" aria-hidden /> {t("common.signIn")}
     </Link>
   );
 }
@@ -121,6 +128,7 @@ function Brand() {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { t } = useTranslation();
   const close = () => setMobileOpen(false);
 
   return (
@@ -145,7 +153,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Button
             variant="ghost"
             size="icon"
-            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+            aria-label={mobileOpen ? t("common.closeMenu") : t("common.openMenu")}
             aria-expanded={mobileOpen}
             onClick={() => setMobileOpen((v) => !v)}
           >
@@ -175,7 +183,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               <div className="flex items-center justify-between">
                 <Brand />
-                <Button variant="ghost" size="icon" aria-label="Close menu" onClick={close}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={t("common.closeMenu")}
+                  onClick={close}
+                >
                   <X className="h-5 w-5" />
                 </Button>
               </div>

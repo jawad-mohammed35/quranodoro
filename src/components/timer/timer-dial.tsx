@@ -3,11 +3,13 @@
 import { motion } from "framer-motion";
 import { formatClock } from "@/lib/utils";
 import type { SessionPhase } from "@/lib/types";
+import { useTranslation } from "@/lib/i18n";
+import type { TranslationKey } from "@/lib/i18n/translations/en";
 
-const PHASE_LABELS: Record<SessionPhase, string> = {
-  focus: "Focus",
-  shortBreak: "Short break",
-  longBreak: "Long break",
+const PHASE_KEYS: Record<SessionPhase, TranslationKey> = {
+  focus: "pomodoro.phaseFocus",
+  shortBreak: "pomodoro.phaseShortBreak",
+  longBreak: "pomodoro.phaseLongBreak",
 };
 
 interface TimerDialProps {
@@ -21,13 +23,15 @@ const RADIUS = 130;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 export function TimerDial({ secondsLeft, phaseSeconds, phase, running }: TimerDialProps) {
+  const { t } = useTranslation();
   const progress = phaseSeconds > 0 ? 1 - secondsLeft / phaseSeconds : 0;
+  const phaseLabel = t(PHASE_KEYS[phase]);
 
   return (
     <div
       className="relative mx-auto aspect-square w-full max-w-xs sm:max-w-sm"
       role="timer"
-      aria-label={`${PHASE_LABELS[phase]}: ${formatClock(secondsLeft)} remaining`}
+      aria-label={`${phaseLabel}: ${formatClock(secondsLeft)} remaining`}
     >
       <svg viewBox="0 0 300 300" className="h-full w-full -rotate-90">
         <circle
@@ -54,7 +58,7 @@ export function TimerDial({ secondsLeft, phaseSeconds, phase, running }: TimerDi
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
         <span className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          {PHASE_LABELS[phase]}
+          {phaseLabel}
         </span>
         <span className="font-mono text-5xl font-semibold tabular-nums sm:text-6xl">
           {formatClock(secondsLeft)}
@@ -64,7 +68,7 @@ export function TimerDial({ secondsLeft, phaseSeconds, phase, running }: TimerDi
           animate={{ opacity: running ? [1, 0.4, 1] : 1 }}
           transition={running ? { repeat: Infinity, duration: 2.5 } : undefined}
         >
-          {running ? "in progress" : "\u00A0"}
+          {running ? t("common.inProgress") : "\u00A0"}
         </motion.span>
       </div>
     </div>

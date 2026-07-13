@@ -6,6 +6,7 @@ import { SURAHS } from "@/data/surahs";
 import { useSettingsStore } from "@/stores/settings-store";
 import { usePlayerStore } from "@/stores/player-store";
 import { useMounted } from "@/hooks/use-mounted";
+import { useTranslation } from "@/lib/i18n";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ import { cn } from "@/lib/utils";
 
 function SurahList() {
   const [query, setQuery] = useState("");
+  const { t } = useTranslation();
   const surahNumber = useSettingsStore((s) => s.surahNumber);
   const favoriteSurahs = useSettingsStore((s) => s.favoriteSurahs);
   const setSetting = useSettingsStore((s) => s.setSetting);
@@ -45,11 +47,11 @@ function SurahList() {
         />
         <Input
           type="search"
-          placeholder="Search surahs by name or number…"
+          placeholder={t("quran.searchPlaceholder")}
           className="pl-9"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          aria-label="Search surahs"
+          aria-label={t("quran.searchAria")}
         />
       </div>
 
@@ -69,7 +71,7 @@ function SurahList() {
                   type="button"
                   onClick={() => playSurah(s.number)}
                   className="flex min-w-0 flex-1 items-center gap-3 text-left focus-visible:outline-2 focus-visible:outline-ring"
-                  aria-label={`Play surah ${s.name}`}
+                  aria-label={t("quran.playSurah", { name: s.name })}
                 >
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium tabular-nums group-hover:bg-card">
                     {s.number}
@@ -91,7 +93,9 @@ function SurahList() {
                 </button>
                 <button
                   type="button"
-                  aria-label={favorite ? `Unfavorite ${s.name}` : `Favorite ${s.name}`}
+                  aria-label={
+                    favorite ? t("quran.removeFavorite") : t("quran.addFavorite")
+                  }
                   aria-pressed={favorite}
                   onClick={() => toggleFavoriteSurah(s.number)}
                   className="rounded-full p-1.5 text-muted-foreground hover:text-primary focus-visible:outline-2 focus-visible:outline-ring"
@@ -111,7 +115,7 @@ function SurahList() {
         })}
         {filtered.length === 0 && (
           <li className="py-8 text-center text-sm text-muted-foreground">
-            No surahs match “{query}”.
+            {t("quran.noResultsQuery", { query })}
           </li>
         )}
       </ul>
@@ -121,17 +125,18 @@ function SurahList() {
 
 export function QuranView() {
   const mounted = useMounted();
+  const { t } = useTranslation();
 
   return (
     <>
       <PageHeader
-        title="Quran Player"
-        description="Choose a reciter and surah. Recitation continues while you move around the app."
+        title={t("quran.title")}
+        description={t("quran.pageDescription")}
       />
       <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
         <Card className="h-fit lg:sticky lg:top-8">
           <CardHeader>
-            <CardTitle>Now playing</CardTitle>
+            <CardTitle>{t("quran.nowPlaying")}</CardTitle>
           </CardHeader>
           <CardContent>
             <PlayerControls />
@@ -139,7 +144,7 @@ export function QuranView() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>All surahs</CardTitle>
+            <CardTitle>{t("quran.allSurahs")}</CardTitle>
           </CardHeader>
           <CardContent>{mounted && <SurahList />}</CardContent>
         </Card>
