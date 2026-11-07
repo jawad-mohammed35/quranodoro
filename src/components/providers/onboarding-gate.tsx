@@ -14,7 +14,12 @@ export function OnboardingGate() {
   const router = useRouter();
 
   useEffect(() => {
-    if (needsDisplayName && pathname !== "/welcome") {
+    if (
+      needsDisplayName &&
+      pathname !== "/welcome" &&
+      pathname !== "/update-password" &&
+      !pathname.startsWith("/auth/")
+    ) {
       router.replace("/welcome");
     }
   }, [needsDisplayName, pathname, router]);

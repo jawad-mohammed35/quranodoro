@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Amiri } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
 import "./globals.css";
+import { MotionProvider } from "@/components/providers/motion-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { OnboardingGate } from "@/components/providers/onboarding-gate";
 import { AppShell } from "@/components/layout/app-shell";
@@ -26,6 +29,30 @@ const amiri = Amiri({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "https://quranodoro.vercel.app",
+  ),
+  applicationName: "Quranodoro",
+  openGraph: {
+    type: "website",
+    siteName: "Quranodoro",
+    title: "Quranodoro — Focus with the Quran",
+    description:
+      "A peaceful space for Quran recitation, focused work, dhikr, and daily growth.",
+    images: [
+      {
+        url: "/logo.png",
+        width: 1011,
+        height: 1024,
+        alt: "Quranodoro Islamic productivity",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: "Quranodoro — Focus with the Quran",
+    images: ["/logo.png"],
+  },
   title: {
     default: "Quranodoro — Focus with the Quran",
     template: "%s · Quranodoro",
@@ -54,13 +81,15 @@ export default function RootLayout({
     >
       <body className="min-h-full">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-          <AuthProvider>
-            <OnboardingGate />
-            <TimerTicker />
-            <QuranAudioEngine />
-            <LocaleApplier />
-            <AppShell>{children}</AppShell>
-          </AuthProvider>
+          <MotionProvider>
+            <AuthProvider>
+              <OnboardingGate />
+              <TimerTicker />
+              <QuranAudioEngine />
+              <LocaleApplier />
+              <AppShell>{children}</AppShell>
+            </AuthProvider>
+          </MotionProvider>
         </ThemeProvider>
       </body>
     </html>

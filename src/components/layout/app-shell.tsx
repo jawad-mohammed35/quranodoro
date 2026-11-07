@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { ActiveNavIcon } from "./active-nav-icon";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -28,15 +29,47 @@ import { useTranslation } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n/translations/en";
 
 const NAV_ITEMS = [
-  { href: "/", labelKey: "nav.dashboard" as TranslationKey, icon: LayoutDashboard },
-  { href: "/pomodoro", labelKey: "nav.pomodoro" as TranslationKey, icon: TimerIcon },
-  { href: "/quran", labelKey: "nav.quranPlayer" as TranslationKey, icon: BookOpen },
-  { href: "/tasbih", labelKey: "nav.tasbih" as TranslationKey, icon: CircleDot },
+  {
+    href: "/",
+    labelKey: "nav.dashboard" as TranslationKey,
+    icon: LayoutDashboard,
+  },
+  {
+    href: "/pomodoro",
+    labelKey: "nav.pomodoro" as TranslationKey,
+    icon: TimerIcon,
+  },
+  {
+    href: "/quran",
+    labelKey: "nav.quranPlayer" as TranslationKey,
+    icon: BookOpen,
+  },
+  {
+    href: "/tasbih",
+    labelKey: "nav.tasbih" as TranslationKey,
+    icon: CircleDot,
+  },
   { href: "/farm", labelKey: "nav.dateFarm" as TranslationKey, icon: TreePalm },
-  { href: "/analytics", labelKey: "nav.analytics" as TranslationKey, icon: BarChart3 },
-  { href: "/about-farm", labelKey: "nav.aboutDateFarm" as TranslationKey, icon: Info },
-  { href: "/settings", labelKey: "nav.settings" as TranslationKey, icon: Settings },
-  { href: "/about", labelKey: "nav.aboutDeveloper" as TranslationKey, icon: User },
+  {
+    href: "/analytics",
+    labelKey: "nav.analytics" as TranslationKey,
+    icon: BarChart3,
+  },
+  {
+    href: "/about-farm",
+    labelKey: "nav.aboutDateFarm" as TranslationKey,
+    icon: Info,
+  },
+  {
+    href: "/settings",
+    labelKey: "nav.settings" as TranslationKey,
+    icon: Settings,
+  },
+  {
+    href: "/about",
+    labelKey: "nav.aboutDeveloper" as TranslationKey,
+    icon: User,
+  },
 ] as const;
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
@@ -60,7 +93,11 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
-            <Icon className="h-4.5 w-4.5 shrink-0" aria-hidden />
+            {active ? (
+              <ActiveNavIcon href={href} />
+            ) : (
+              <Icon className="h-4.5 w-4.5 shrink-0" aria-hidden />
+            )}
             {t(labelKey)}
           </Link>
         );
@@ -78,9 +115,14 @@ function AuthSection({ onNavigate }: { onNavigate?: () => void }) {
       <div className="flex flex-col gap-2">
         <div className="min-w-0 px-3">
           {profile?.displayName && (
-            <p className="truncate text-sm font-medium">{profile.displayName}</p>
+            <p className="truncate text-sm font-medium">
+              {profile.displayName}
+            </p>
           )}
-          <p className="truncate text-xs text-muted-foreground" title={user.email ?? ""}>
+          <p
+            className="truncate text-xs text-muted-foreground"
+            title={user.email ?? ""}
+          >
             {user.email}
           </p>
         </div>
@@ -130,11 +172,48 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { t } = useTranslation();
   const close = () => setMobileOpen(false);
+  const drawerRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const previous = document.activeElement as HTMLElement;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    drawerRef.current?.querySelector<HTMLElement>("a,button")?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileOpen(false);
+      if (e.key !== "Tab") return;
+      const focusable = drawerRef.current?.querySelectorAll<HTMLElement>(
+        "a[href],button:not([disabled]),input,select",
+      );
+      if (!focusable?.length) return;
+      const first = focusable[0],
+        last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = overflow;
+      document.removeEventListener("keydown", onKey);
+      previous?.focus();
+    };
+  }, [mobileOpen]);
 
   return (
     <div className="flex min-h-dvh">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[80] focus:rounded-xl focus:bg-card focus:p-3"
+      >
+        Skip to content
+      </a>
       {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col gap-6 border-r border-border bg-card px-3 py-6 lg:flex">
+      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col gap-6 border-r border-border glass-surface px-3 py-6 lg:flex">
         <div className="flex items-center justify-between">
           <Brand />
           <ThemeToggle />
@@ -146,18 +225,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Mobile header */}
-      <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-card/90 px-3 backdrop-blur lg:hidden">
+      <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b border-border glass-surface px-3 lg:hidden">
         <Brand />
         <div className="flex items-center gap-1">
           <ThemeToggle />
           <Button
             variant="ghost"
             size="icon"
-            aria-label={mobileOpen ? t("common.closeMenu") : t("common.openMenu")}
+            aria-label={
+              mobileOpen ? t("common.closeMenu") : t("common.openMenu")
+            }
             aria-expanded={mobileOpen}
             onClick={() => setMobileOpen((v) => !v)}
           >
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {mobileOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
           </Button>
         </div>
       </div>
@@ -175,7 +260,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               aria-hidden
             />
             <motion.aside
-              className="fixed inset-y-0 left-0 z-50 flex w-72 flex-col gap-6 border-r border-border bg-card px-3 py-6 lg:hidden"
+              ref={drawerRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Navigation"
+              className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[90vw] overflow-y-auto flex-col gap-6 border-r border-border glass-surface px-3 py-6 lg:hidden"
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
@@ -202,7 +291,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </AnimatePresence>
 
       {/* Main content */}
-      <main className="min-w-0 flex-1 px-4 pb-16 pt-20 sm:px-6 lg:px-10 lg:pt-8">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="min-w-0 flex-1 px-4 pb-16 pt-20 sm:px-6 lg:px-10 lg:pt-8"
+      >
         <div className="mx-auto w-full max-w-5xl">{children}</div>
       </main>
     </div>

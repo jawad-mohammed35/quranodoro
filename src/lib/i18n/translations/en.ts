@@ -72,7 +72,7 @@ export const en = {
     thisWeek: "This week",
     weekSummary: "{focus} focused · {pomodoros} Pomodoros",
     dateFarm: "Date farm",
-    maturePlanted: "{mature} mature {trees} · {planted} planted",
+    maturePlanted: "{mature} mature trees · {planted} planted",
     tree: "tree",
     trees: "trees",
     noTreeGrowing: "No tree is growing right now.",

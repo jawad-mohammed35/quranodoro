@@ -1,6 +1,15 @@
 "use client";
 
-import { Heart, Pause, Play, SkipBack, SkipForward, Square, Volume2 } from "lucide-react";
+import {
+  Heart,
+  LoaderCircle,
+  Pause,
+  Play,
+  SkipBack,
+  SkipForward,
+  Square,
+  Volume2,
+} from "lucide-react";
 import { RECITERS, getReciter } from "@/data/reciters";
 import { SURAHS, getSurah } from "@/data/surahs";
 import { usePlayerStore } from "@/stores/player-store";
@@ -49,18 +58,26 @@ export function PlayerControls({ compact = false }: { compact?: boolean }) {
             {surah.arabicName}
           </p>
           <p className="truncate text-sm text-muted-foreground">
-            {surah.number}. {surah.name} — {surah.englishMeaning} · {reciter.name}
+            {surah.number}. {surah.name} — {surah.englishMeaning} ·{" "}
+            {reciter.name}
           </p>
         </div>
         <Button
           variant="ghost"
           size="icon"
-          aria-label={isFavoriteSurah ? "Remove surah from favorites" : "Add surah to favorites"}
+          aria-label={
+            isFavoriteSurah
+              ? "Remove surah from favorites"
+              : "Add surah to favorites"
+          }
           aria-pressed={isFavoriteSurah}
           onClick={() => toggleFavoriteSurah(surahNumber)}
         >
           <Heart
-            className={cn("h-5 w-5", isFavoriteSurah && "fill-primary text-primary")}
+            className={cn(
+              "h-5 w-5",
+              isFavoriteSurah && "fill-primary text-primary",
+            )}
             aria-hidden
           />
         </Button>
@@ -72,7 +89,9 @@ export function PlayerControls({ compact = false }: { compact?: boolean }) {
         <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
           <div
             className="h-full rounded-full bg-primary transition-[width]"
-            style={{ width: duration > 0 ? `${(currentTime / duration) * 100}%` : "0%" }}
+            style={{
+              width: duration > 0 ? `${(currentTime / duration) * 100}%` : "0%",
+            }}
           />
         </div>
         <span>{duration > 0 ? formatClock(duration) : "--:--"}</span>
@@ -95,7 +114,13 @@ export function PlayerControls({ compact = false }: { compact?: boolean }) {
           aria-label={isPlaying ? "Pause recitation" : "Play recitation"}
           onClick={() => (isPlaying ? requestPause() : requestPlay(true))}
         >
-          {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+          {playback === "loading" ? (
+            <LoaderCircle className="h-6 w-6 animate-spin" />
+          ) : isPlaying ? (
+            <Pause className="h-6 w-6" />
+          ) : (
+            <Play className="h-6 w-6" />
+          )}
         </Button>
         <Button
           variant="ghost"
@@ -117,6 +142,12 @@ export function PlayerControls({ compact = false }: { compact?: boolean }) {
         </Button>
       </div>
 
+      {playback === "loading" && (
+        <p role="status" className="text-center text-xs text-muted-foreground">
+          Loading recitation…
+        </p>
+      )}
+
       {playback === "error" && (
         <p role="alert" className="text-center text-sm text-danger">
           Could not load this recitation. Check your connection or try another
@@ -134,7 +165,10 @@ export function PlayerControls({ compact = false }: { compact?: boolean }) {
                 className="text-xs text-muted-foreground underline-offset-2 hover:underline"
                 aria-pressed={isFavoriteReciter}
                 onClick={() =>
-                  setSetting("favoriteReciterId", isFavoriteReciter ? null : reciterId)
+                  setSetting(
+                    "favoriteReciterId",
+                    isFavoriteReciter ? null : reciterId,
+                  )
                 }
               >
                 {isFavoriteReciter ? "★ Favorite" : "☆ Set favorite"}
@@ -145,11 +179,13 @@ export function PlayerControls({ compact = false }: { compact?: boolean }) {
               value={reciterId}
               onChange={(e) => setSetting("reciterId", e.target.value)}
             >
-              {RECITERS.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                </option>
-              ))}
+              {[...RECITERS]
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
             </Select>
           </div>
 
@@ -185,6 +221,20 @@ export function PlayerControls({ compact = false }: { compact?: boolean }) {
             />
           </div>
         </div>
+      )}
+      {!compact && (
+        <p className="text-xs text-muted-foreground">
+          Hafs recitations streamed from{" "}
+          <a
+            href="https://www.mp3quran.net/eng"
+            target="_blank"
+            rel="noreferrer"
+            className="underline"
+          >
+            MP3Quran
+          </a>
+          . Audio remains hosted by its provider.
+        </p>
       )}
     </div>
   );

@@ -56,12 +56,7 @@ export interface Reciter {
 }
 
 export type TreeTypeId =
-  | "ajwa"
-  | "medjool"
-  | "sukkari"
-  | "deglet-noor"
-  | "barhi"
-  | "safawi";
+  "ajwa" | "medjool" | "sukkari" | "deglet-noor" | "barhi" | "safawi";
 
 export interface TreeType {
   id: TreeTypeId;
@@ -101,6 +96,8 @@ export interface Inspiration {
 import type { UILanguage } from "@/lib/i18n/types";
 
 export interface UserSettings {
+  dashboard: import("@/lib/dashboard").DashboardPreferences;
+  sessionNotifications: boolean;
   autoStartNextSession: boolean;
   playQuranDuringFocus: boolean;
   reciterId: string;

@@ -5,7 +5,12 @@ import { Sprout } from "lucide-react";
 import { useTimerStore } from "@/stores/timer-store";
 import { useSettingsStore, getPresetById } from "@/stores/settings-store";
 import { useFarmStore } from "@/stores/farm-store";
-import { getTreeType, GROWTH_STAGES, stageForGp, growthPointsForMinutes } from "@/data/trees";
+import {
+  getTreeType,
+  GROWTH_STAGES,
+  stageForGp,
+  growthPointsForMinutes,
+} from "@/data/trees";
 import { useMounted } from "@/hooks/use-mounted";
 import { useTranslation } from "@/lib/i18n";
 import { PageHeader } from "@/components/layout/page-header";
@@ -29,7 +34,7 @@ function CycleDots() {
 
   return (
     <div
-      className="flex items-center justify-center gap-2"
+      className="flex flex-wrap items-center justify-center gap-2"
       aria-label={t("pomodoro.focusSessionsUntilLongBreak", {
         current: focusCountInCycle,
         total,
@@ -45,7 +50,9 @@ function CycleDots() {
           aria-hidden
         />
       ))}
-      <span className="ml-1 text-xs text-muted-foreground">{t("pomodoro.untilLongBreak")}</span>
+      <span className="ml-1 text-xs text-muted-foreground">
+        {t("pomodoro.untilLongBreak")}
+      </span>
     </div>
   );
 }
@@ -69,7 +76,10 @@ function GrowingTreeHint() {
       <p className="text-center text-sm text-muted-foreground">
         <Sprout className="mr-1 inline h-4 w-4" aria-hidden />
         {t("pomodoro.noTreeGrowing")}{" "}
-        <Link href="/farm" className="font-medium text-primary underline-offset-2 hover:underline">
+        <Link
+          href="/farm"
+          className="font-medium text-primary underline-offset-2 hover:underline"
+        >
           {t("pomodoro.plantInFarm")}
         </Link>{" "}
         {t("pomodoro.earnGpPerSession", { gp: gpPerSession })}
@@ -109,9 +119,12 @@ export function PomodoroView() {
 
   return (
     <>
-      <PageHeader title={t("pomodoro.title")} description={t("pomodoro.description")} />
+      <PageHeader
+        title={t("pomodoro.title")}
+        description={t("pomodoro.description")}
+      />
 
-      <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <Card>
           <CardContent className="flex flex-col gap-6 p-6 sm:p-8">
             {mounted ? (
@@ -127,7 +140,10 @@ export function PomodoroView() {
                 <GrowingTreeHint />
               </>
             ) : (
-              <div className="mx-auto aspect-square w-full max-w-sm" aria-hidden />
+              <div
+                className="mx-auto aspect-square w-full max-w-sm"
+                aria-hidden
+              />
             )}
 
             <div className="flex flex-col gap-3 border-t border-border pt-4">

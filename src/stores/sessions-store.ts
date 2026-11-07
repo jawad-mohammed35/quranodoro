@@ -1,7 +1,8 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
+import { accountStorage } from "@/lib/account-storage";
 import type { CompletedSession, DailyStat } from "@/lib/types";
 import { dateKey, uid } from "@/lib/utils";
 
@@ -22,13 +23,18 @@ export const useSessionsStore = create<SessionsState>()(
       },
       hydrateFromCloud: (sessions) => set({ sessions }),
     }),
-    { name: "quranodoro-sessions" },
+    {
+      name: "quranodoro-sessions",
+      storage: createJSONStorage(() => accountStorage),
+    },
   ),
 );
 
 /* ---------- Derived statistics (pure helpers over the session list) ---------- */
 
-export function focusSessions(sessions: CompletedSession[]): CompletedSession[] {
+export function focusSessions(
+  sessions: CompletedSession[],
+): CompletedSession[] {
   return sessions.filter((s) => s.phase === "focus");
 }
 
@@ -40,7 +46,10 @@ export function totalPomodoros(sessions: CompletedSession[]): number {
   return focusSessions(sessions).length;
 }
 
-export function focusMinutesOn(sessions: CompletedSession[], date: Date): number {
+export function focusMinutesOn(
+  sessions: CompletedSession[],
+  date: Date,
+): number {
   const key = dateKey(date);
   return focusSessions(sessions)
     .filter((s) => dateKey(new Date(s.completedAt)) === key)
@@ -77,7 +86,10 @@ export function currentStreak(sessions: CompletedSession[]): number {
 }
 
 /** Daily totals for the last `n` days (oldest first). */
-export function lastNDays(sessions: CompletedSession[], n: number): DailyStat[] {
+export function lastNDays(
+  sessions: CompletedSession[],
+  n: number,
+): DailyStat[] {
   const byDay = new Map<string, { focusMinutes: number; pomodoros: number }>();
   for (const s of focusSessions(sessions)) {
     const key = dateKey(new Date(s.completedAt));
@@ -103,7 +115,10 @@ export function lastNMonths(
   sessions: CompletedSession[],
   n: number,
 ): { month: string; focusMinutes: number; pomodoros: number }[] {
-  const byMonth = new Map<string, { focusMinutes: number; pomodoros: number }>();
+  const byMonth = new Map<
+    string,
+    { focusMinutes: number; pomodoros: number }
+  >();
   for (const s of focusSessions(sessions)) {
     const d = new Date(s.completedAt);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -116,9 +131,13 @@ export function lastNMonths(
   const result = [];
   for (let i = n - 1; i >= 0; i--) {
     const d = new Date();
+    d.setDate(1);
     d.setMonth(d.getMonth() - i);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    result.push({ month: key, ...(byMonth.get(key) ?? { focusMinutes: 0, pomodoros: 0 }) });
+    result.push({
+      month: key,
+      ...(byMonth.get(key) ?? { focusMinutes: 0, pomodoros: 0 }),
+    });
   }
   return result;
 }

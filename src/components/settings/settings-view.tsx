@@ -1,5 +1,8 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { ProgressBackup } from "./progress-backup";
+import { DashboardSettings } from "./dashboard-settings";
 import { useTheme } from "next-themes";
 import { RECITERS } from "@/data/reciters";
 import { SURAHS } from "@/data/surahs";
@@ -10,7 +13,13 @@ import { useSettingsStore } from "@/stores/settings-store";
 import { useMounted } from "@/hooks/use-mounted";
 import { useAuth } from "@/components/providers/auth-provider";
 import { PageHeader } from "@/components/layout/page-header";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Input, Label } from "@/components/ui/input";
@@ -42,6 +51,7 @@ function SettingRow({
 }
 
 export function SettingsView() {
+  const router = useRouter();
   const mounted = useMounted();
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
@@ -50,14 +60,60 @@ export function SettingsView() {
   const settings = useSettingsStore();
 
   if (!mounted) {
-    return <PageHeader title={t("settings.title")} description={t("common.loading")} />;
+    return (
+      <PageHeader
+        title={t("settings.title")}
+        description={t("common.loading")}
+      />
+    );
   }
 
   return (
     <>
-      <PageHeader title={t("settings.title")} description={t("settings.description")} />
+      <PageHeader
+        title={t("settings.title")}
+        description={t("settings.description")}
+      />
 
       <div className="flex flex-col gap-6">
+        <DashboardSettings />
+        <ProgressBackup />
+        <Card>
+          <CardHeader>
+            <CardTitle>Session notifications</CardTitle>
+            <CardDescription>
+              Optional browser alerts when a focus session or break finishes.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                if (settings.sessionNotifications) {
+                  settings.setSetting("sessionNotifications", false);
+                  return;
+                }
+                if (typeof Notification === "undefined") {
+                  window.alert("This browser does not support notifications.");
+                  return;
+                }
+                const permission = await Notification.requestPermission();
+                settings.setSetting(
+                  "sessionNotifications",
+                  permission === "granted",
+                );
+                if (permission !== "granted")
+                  window.alert(
+                    "Notifications are blocked. You can allow them in your browser's site settings.",
+                  );
+              }}
+            >
+              {settings.sessionNotifications
+                ? "Disable notifications"
+                : "Enable notifications"}
+            </Button>
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader>
             <CardTitle>{t("settings.profile")}</CardTitle>
@@ -73,7 +129,9 @@ export function SettingsView() {
                 placeholder={t("settings.yourNamePlaceholder")}
                 maxLength={40}
                 value={settings.displayName}
-                onChange={(e) => settings.setSetting("displayName", e.target.value)}
+                onChange={(e) =>
+                  settings.setSetting("displayName", e.target.value)
+                }
               />
             </SettingRow>
           </CardContent>
@@ -108,7 +166,10 @@ export function SettingsView() {
                 id="settings-language"
                 value={settings.uiLanguage}
                 onChange={(e) =>
-                  settings.setSetting("uiLanguage", e.target.value as UILanguage)
+                  settings.setSetting(
+                    "uiLanguage",
+                    e.target.value as UILanguage,
+                  )
                 }
               >
                 {UI_LANGUAGES.map((lang) => (
@@ -135,7 +196,9 @@ export function SettingsView() {
                 <Switch
                   id="settings-auto-start"
                   checked={settings.autoStartNextSession}
-                  onCheckedChange={(v) => settings.setSetting("autoStartNextSession", v)}
+                  onCheckedChange={(v) =>
+                    settings.setSetting("autoStartNextSession", v)
+                  }
                 />
               </div>
             </SettingRow>
@@ -156,15 +219,22 @@ export function SettingsView() {
                 <Switch
                   id="settings-play-quran"
                   checked={settings.playQuranDuringFocus}
-                  onCheckedChange={(v) => settings.setSetting("playQuranDuringFocus", v)}
+                  onCheckedChange={(v) =>
+                    settings.setSetting("playQuranDuringFocus", v)
+                  }
                 />
               </div>
             </SettingRow>
-            <SettingRow label={t("settings.reciter")} htmlFor="settings-reciter">
+            <SettingRow
+              label={t("settings.reciter")}
+              htmlFor="settings-reciter"
+            >
               <Select
                 id="settings-reciter"
                 value={settings.reciterId}
-                onChange={(e) => settings.setSetting("reciterId", e.target.value)}
+                onChange={(e) =>
+                  settings.setSetting("reciterId", e.target.value)
+                }
               >
                 {RECITERS.map((r) => (
                   <option key={r.id} value={r.id}>
@@ -177,7 +247,9 @@ export function SettingsView() {
               <Select
                 id="settings-surah"
                 value={settings.surahNumber}
-                onChange={(e) => settings.setSetting("surahNumber", Number(e.target.value))}
+                onChange={(e) =>
+                  settings.setSetting("surahNumber", Number(e.target.value))
+                }
               >
                 {SURAHS.map((s) => (
                   <option key={s.number} value={s.number}>
@@ -187,7 +259,9 @@ export function SettingsView() {
               </Select>
             </SettingRow>
             <SettingRow
-              label={t("settings.volume", { percent: Math.round(settings.volume * 100) })}
+              label={t("settings.volume", {
+                percent: Math.round(settings.volume * 100),
+              })}
               htmlFor="settings-volume"
             >
               <input
@@ -198,7 +272,9 @@ export function SettingsView() {
                 step={0.05}
                 className="w-full"
                 value={settings.volume}
-                onChange={(e) => settings.setSetting("volume", Number(e.target.value))}
+                onChange={(e) =>
+                  settings.setSetting("volume", Number(e.target.value))
+                }
                 aria-label={t("settings.volumeAria")}
               />
             </SettingRow>
@@ -219,7 +295,10 @@ export function SettingsView() {
                 id="settings-fav-reciter"
                 value={settings.favoriteReciterId ?? ""}
                 onChange={(e) =>
-                  settings.setSetting("favoriteReciterId", e.target.value || null)
+                  settings.setSetting(
+                    "favoriteReciterId",
+                    e.target.value || null,
+                  )
                 }
               >
                 <option value="">{t("common.none")}</option>
@@ -253,8 +332,10 @@ export function SettingsView() {
               </p>
             ) : (
               <div className="flex flex-col items-start gap-3">
-                <p className="text-sm text-muted-foreground">{t("settings.localOnly")}</p>
-                <Button onClick={() => (window.location.href = "/register")}>
+                <p className="text-sm text-muted-foreground">
+                  {t("settings.localOnly")}
+                </p>
+                <Button onClick={() => router.push("/register")}>
                   {t("settings.createAccount")}
                 </Button>
               </div>

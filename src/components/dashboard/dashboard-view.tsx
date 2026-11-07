@@ -1,8 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { CustomizableDashboard } from "./customizable-dashboard";
 import { motion } from "framer-motion";
-import { CalendarDays, Clock, Flame, Headphones, Target, TreePalm } from "lucide-react";
+import {
+  CalendarDays,
+  Clock,
+  Flame,
+  Headphones,
+  Target,
+  TreePalm,
+} from "lucide-react";
 import {
   useSessionsStore,
   currentStreak,
@@ -15,12 +23,23 @@ import {
 import { useFarmStore } from "@/stores/farm-store";
 import { useSettingsStore } from "@/stores/settings-store";
 import { getReciter } from "@/data/reciters";
-import { GROWTH_STAGES, getTreeType, progressToNextStage, stageForGp } from "@/data/trees";
+import {
+  GROWTH_STAGES,
+  getTreeType,
+  progressToNextStage,
+  stageForGp,
+} from "@/data/trees";
 import { useMounted } from "@/hooks/use-mounted";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useTranslation } from "@/lib/i18n";
 import { PageHeader } from "@/components/layout/page-header";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { TreeVisual } from "@/components/farm/tree-visual";
 import { InspirationWidget } from "@/components/dashboard/inspiration-widget";
@@ -56,8 +75,14 @@ function StatCard({
             <span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">
               {label}
             </span>
-            <span className="block truncate text-xl font-semibold tabular-nums">{value}</span>
-            {hint && <span className="block text-xs text-muted-foreground">{hint}</span>}
+            <span className="block truncate text-xl font-semibold tabular-nums">
+              {value}
+            </span>
+            {hint && (
+              <span className="block text-xs text-muted-foreground">
+                {hint}
+              </span>
+            )}
           </span>
         </CardContent>
       </Card>
@@ -101,7 +126,9 @@ function TodaysFocusCard() {
             href="/pomodoro"
             className="inline-flex h-10 w-fit items-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
           >
-            {pomodoros > 0 ? t("common.keepGoing") : t("common.startFirstSession")}
+            {pomodoros > 0
+              ? t("common.keepGoing")
+              : t("common.startFirstSession")}
           </Link>
         </CardContent>
       </Card>
@@ -117,7 +144,7 @@ function FavoriteReciterCard() {
 
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between">
+      <CardHeader className="flex-row flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft">
             <Headphones className="h-5 w-5 text-primary" aria-hidden />
@@ -127,7 +154,11 @@ function FavoriteReciterCard() {
             <CardDescription>{reciter.name}</CardDescription>
           </div>
         </div>
-        <p className="font-arabic text-xl text-muted-foreground" dir="rtl" lang="ar">
+        <p
+          className="font-arabic text-xl text-muted-foreground"
+          dir="rtl"
+          lang="ar"
+        >
           {reciter.arabicName}
         </p>
       </CardHeader>
@@ -150,7 +181,9 @@ function WeeklySummary() {
         <CardTitle>{t("dashboard.thisWeek")}</CardTitle>
         <CardDescription>
           {t("dashboard.weekSummary", {
-            focus: formatDuration(week.reduce((sum, d) => sum + d.focusMinutes, 0)),
+            focus: formatDuration(
+              week.reduce((sum, d) => sum + d.focusMinutes, 0),
+            ),
             pomodoros: week.reduce((sum, d) => sum + d.pomodoros, 0),
           })}
         </CardDescription>
@@ -160,11 +193,16 @@ function WeeklySummary() {
           {week.map((day) => {
             const date = new Date(`${day.date}T00:00:00`);
             return (
-              <div key={day.date} className="flex flex-1 flex-col items-center gap-1.5">
+              <div
+                key={day.date}
+                className="flex flex-1 flex-col items-center gap-1.5"
+              >
                 <motion.div
                   className="w-full max-w-8 rounded-t-md bg-primary/80"
                   initial={{ height: 0 }}
-                  animate={{ height: `${Math.max(4, (day.focusMinutes / max) * 96)}px` }}
+                  animate={{
+                    height: `${Math.max(4, (day.focusMinutes / max) * 96)}px`,
+                  }}
                   transition={{ duration: 0.5, ease: "easeOut" }}
                   title={`${day.date}: ${formatDuration(day.focusMinutes)}`}
                 />
@@ -276,28 +314,38 @@ export function DashboardView() {
       </PageHeader>
 
       {mounted && (
-        <div className="flex flex-col gap-6">
-          <div className="grid gap-4 lg:grid-cols-3">
-            <TodaysFocusCard />
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-2">
+        <CustomizableDashboard
+          panels={{
+            focus: <TodaysFocusCard />,
+            streak: (
               <StatCard
                 index={1}
                 icon={Flame}
                 label={t("dashboard.currentStreak")}
-                value={`${streak} ${streak === 1 ? t("common.day") : t("common.days")}`}
+                value={
+                  String(streak) +
+                  " " +
+                  (streak === 1 ? t("common.day") : t("common.days"))
+                }
               />
+            ),
+            pomodoros: (
               <StatCard
                 index={2}
                 icon={Target}
                 label={t("dashboard.totalPomodoros")}
                 value={String(totalPomodoros(sessions))}
               />
+            ),
+            minutes: (
               <StatCard
                 index={3}
                 icon={CalendarDays}
                 label={t("dashboard.totalFocus")}
                 value={formatDuration(totalFocusMinutes(sessions))}
               />
+            ),
+            orchard: (
               <StatCard
                 index={4}
                 icon={TreePalm}
@@ -305,20 +353,13 @@ export function DashboardView() {
                 value={String(trees.filter((t) => t.maturedAt).length)}
                 hint={t("dashboard.matureTrees")}
               />
-            </div>
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="flex flex-col gap-6 lg:col-span-2">
-              <WeeklySummary />
-              <FavoriteReciterCard />
-            </div>
-            <div className="flex flex-col gap-6">
-              <ActiveTreeWidget />
-              <InspirationWidget />
-            </div>
-          </div>
-        </div>
+            ),
+            week: <WeeklySummary />,
+            reciter: <FavoriteReciterCard />,
+            tree: <ActiveTreeWidget />,
+            inspiration: <InspirationWidget />,
+          }}
+        />
       )}
     </>
   );

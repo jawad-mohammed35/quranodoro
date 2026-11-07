@@ -16,11 +16,22 @@ import {
   FINAL_STAGE_INDEX,
 } from "@/data/trees";
 import { useFarmStore } from "@/stores/farm-store";
+import {
+  useSessionsStore,
+  focusMinutesOn,
+  pomodorosOn,
+} from "@/stores/sessions-store";
 import { useTimerStore } from "@/stores/timer-store";
 import { useMounted } from "@/hooks/use-mounted";
 import { useTranslation } from "@/lib/i18n";
 import { PageHeader } from "@/components/layout/page-header";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { TreeVisual } from "@/components/farm/tree-visual";
@@ -37,7 +48,9 @@ function ActiveTreeCard({ tree }: { tree: FarmTree }) {
   const stage = GROWTH_STAGES[stageIndex];
   const progress = progressToNextStage(tree.gp, type.gpMultiplier);
   const nextThreshold =
-    stageIndex < FINAL_STAGE_INDEX ? stageThreshold(stageIndex + 1, type.gpMultiplier) : null;
+    stageIndex < FINAL_STAGE_INDEX
+      ? stageThreshold(stageIndex + 1, type.gpMultiplier)
+      : null;
 
   return (
     <Card>
@@ -120,7 +133,9 @@ function PlantPicker() {
             >
               <span className="flex items-center justify-between text-sm font-medium">
                 <span>{t.name}</span>
-                {selected === t.id && <Check className="h-4 w-4 text-primary" aria-hidden />}
+                {selected === t.id && (
+                  <Check className="h-4 w-4 text-primary" aria-hidden />
+                )}
               </span>
               <span className="text-xs leading-relaxed text-muted-foreground">
                 {t.description}
@@ -132,7 +147,8 @@ function PlantPicker() {
           ))}
         </div>
         <Button onClick={handlePlant} className="self-start">
-          <Sprout className="h-4 w-4" aria-hidden /> Plant {getTreeType(selected).name}
+          <Sprout className="h-4 w-4" aria-hidden /> Plant{" "}
+          {getTreeType(selected).name}
         </Button>
       </CardContent>
     </Card>
@@ -208,13 +224,13 @@ export function FarmView() {
   const trees = useFarmStore((s) => s.trees);
   const activeTreeId = useFarmStore((s) => s.activeTreeId);
   const activeTree = trees.find((t) => t.id === activeTreeId);
+  const sessions = useSessionsStore((s) => s.sessions);
+  const todayMinutes = focusMinutesOn(sessions, new Date());
+  const todaySessions = pomodorosOn(sessions, new Date());
 
   return (
     <>
-      <PageHeader
-        title={t("farm.title")}
-        description={t("farm.description")}
-      >
+      <PageHeader title={t("farm.title")} description={t("farm.description")}>
         <Link
           href="/about-farm"
           className="text-sm font-medium text-primary underline-offset-4 hover:underline"
@@ -225,13 +241,28 @@ export function FarmView() {
 
       {mounted && (
         <div className="flex flex-col gap-6">
+          <Card className="border-primary/20 bg-primary-soft/40">
+            <CardContent className="pt-6">
+              <p className="text-sm font-medium">
+                Today&apos;s growth: {todaySessions} focus{" "}
+                {todaySessions === 1 ? "session" : "sessions"} · {todayMinutes}{" "}
+                minutes
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Complete a focus session to grow your active tree. A 25-minute
+                session earns 10 growth points. Plant or select a growing tree
+                before focusing; mature trees stay in your orchard.
+              </p>
+            </CardContent>
+          </Card>
           {activeTree && <ActiveTreeCard tree={activeTree} />}
 
           <section aria-label="Your orchard">
             <h2 className="mb-3 text-lg font-semibold">
               {t("farm.yourOrchard")}{" "}
               <span className="text-sm font-normal text-muted-foreground">
-                ({trees.filter((t) => t.maturedAt).length} mature · {trees.length} total)
+                ({trees.filter((t) => t.maturedAt).length} mature ·{" "}
+                {trees.length} total)
               </span>
             </h2>
             <Orchard />

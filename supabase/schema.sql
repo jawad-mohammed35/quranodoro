@@ -77,24 +77,7 @@ create trigger on_auth_user_created
 -- Only the auth trigger may run this; never via the REST API.
 revoke all on function public.handle_new_user() from public, anon, authenticated;
 
--- ------------------------------------------------------------
--- Sign-in UX helper: lets the app distinguish "no account with
--- this email" from "wrong password" on failed logins.
--- ------------------------------------------------------------
-create or replace function public.email_exists(check_email text)
-returns boolean
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select exists (
-    select 1 from auth.users where lower(email) = lower(check_email)
-  );
-$$;
-
-revoke all on function public.email_exists(text) from public, authenticated;
-grant execute on function public.email_exists(text) to anon;
+-- Do not expose an email lookup RPC: it enables account enumeration.
 
 -- ------------------------------------------------------------
 -- Per-user app state (settings, presets, farm) as JSON snapshots

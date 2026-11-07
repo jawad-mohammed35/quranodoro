@@ -1,6 +1,11 @@
 "use client";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  duringHydration,
+  markAccountSynced,
+  unsyncedRevision,
+} from "@/lib/account-storage";
 import type { CompletedSession, FarmTree } from "@/lib/types";
 import {
   useSettingsStore,
@@ -16,9 +21,9 @@ import { useTasbihStore } from "@/stores/tasbih-store";
  * Local-first: all stores persist to localStorage, so the app works fully
  * offline and signed out. When a user signs in:
  *
- * 1. `pullFromCloud` loads their cloud snapshot. If the cloud has data it
- *    wins; if the cloud is empty (fresh account) the local state is pushed up
- *    so nothing is lost on first sign-up.
+ * 1. `pullFromCloud` reads the selected account's snapshot. Clean caches accept
+ *    cloud state; pending account edits are retained and uploaded. Guest state
+ *    is isolated. Session history merges by ID and is read in pages.
  * 2. `startSync` subscribes to the stores and debounces upserts to Supabase.
  */
 
@@ -41,6 +46,13 @@ function settingsSnapshot(): SettingsSnapshot {
     uiLanguage: s.uiLanguage,
     selectedPresetId: s.selectedPresetId,
     customPresets: s.customPresets,
+    dashboard: s.dashboard,
+    sessionNotifications: s.sessionNotifications,
+    tasbih: (() => {
+      const { count, target, phrase, feedback, completedSessions } =
+        useTasbihStore.getState();
+      return { count, target, phrase, feedback, completedSessions };
+    })(),
     tasbihCompletedSessions: useTasbihStore.getState().completedSessions,
   };
 }
@@ -82,56 +94,165 @@ function fromSessionRow(row: SessionRow): CompletedSession {
   };
 }
 
-export async function pullFromCloud(supabase: SupabaseClient, userId: string) {
-  const [{ data: state }, { data: sessionRows }] = await Promise.all([
-    supabase.from("user_state").select("settings, farm").eq("user_id", userId).maybeSingle(),
-    supabase.from("sessions").select("id, completed_at, phase, duration_minutes, preset_id, growth_points").eq("user_id", userId).order("completed_at"),
+async function readSessions(supabase: SupabaseClient, userId: string) {
+  const rows: SessionRow[] = [];
+  for (let offset = 0; ; offset += 1000) {
+    const { data, error } = await supabase
+      .from("sessions")
+      .select(
+        "id, completed_at, phase, duration_minutes, preset_id, growth_points",
+      )
+      .eq("user_id", userId)
+      .order("completed_at")
+      .order("id")
+      .range(offset, offset + 999);
+    if (error) return { data: null, error };
+    rows.push(...(data as SessionRow[]));
+    if (data.length < 1000) return { data: rows, error: null };
+  }
+}
+
+async function writeSessions(
+  supabase: SupabaseClient,
+  userId: string,
+  sessions: CompletedSession[],
+) {
+  for (let offset = 0; offset < sessions.length; offset += 500) {
+    const { error } = await supabase.from("sessions").upsert(
+      sessions.slice(offset, offset + 500).map((s) => toSessionRow(s, userId)),
+      { onConflict: "id" },
+    );
+    if (error) throw error;
+  }
+}
+
+export async function pullFromCloud(
+  supabase: SupabaseClient,
+  userId: string,
+  isCurrent = () => true,
+) {
+  const [
+    { data: state, error: stateError },
+    { data: sessionRows, error: sessionError },
+  ] = await Promise.all([
+    supabase
+      .from("user_state")
+      .select("settings, farm")
+      .eq("user_id", userId)
+      .maybeSingle(),
+    readSessions(supabase, userId),
   ]);
+  if (!isCurrent()) return;
+  if (stateError || sessionError) throw stateError || sessionError;
 
   const cloudHasState =
-    state && (Object.keys(state.settings ?? {}).length > 0 || Object.keys(state.farm ?? {}).length > 0);
+    state &&
+    (Object.keys(state.settings ?? {}).length > 0 ||
+      Object.keys(state.farm ?? {}).length > 0);
 
-  if (cloudHasState) {
-    if (Object.keys(state.settings ?? {}).length > 0) {
-      const cloudSettings = state.settings as Partial<SettingsSnapshot> & {
-        arabicFontId?: string;
-      };
-      const { arabicFontId: _legacy, tasbihCompletedSessions, ...settings } = cloudSettings;
-      useSettingsStore.getState().hydrateFromCloud(settings);
-      if (tasbihCompletedSessions) {
-        useTasbihStore.getState().hydrateFromCloud({ completedSessions: tasbihCompletedSessions });
-      }
-    }
-    const farm = state.farm as Partial<FarmSnapshot>;
-    if (farm?.trees) {
-      useFarmStore.getState().hydrateFromCloud({
-        trees: farm.trees,
-        activeTreeId: farm.activeTreeId ?? null,
+  // Preserve offline edits and debounced changes left behind by a sign-out.
+  // Snapshot conflicts use last successful writer; append-only sessions merge.
+  const localHasChanges = Boolean(unsyncedRevision(userId));
+  if (cloudHasState && localHasChanges) {
+    // Keep independently-created trees and completed dhikr from both devices.
+    const cloudFarm = state.farm as Partial<FarmSnapshot>;
+    const farm = useFarmStore.getState();
+    const trees = new Map(
+      (cloudFarm.trees || []).map((tree) => [tree.id, tree]),
+    );
+    farm.trees.forEach((tree) => {
+      const remote = trees.get(tree.id);
+      trees.set(tree.id, remote && remote.gp > tree.gp ? remote : tree);
+    });
+    const cloudSettings = state.settings as Partial<SettingsSnapshot>;
+    const dhikr = useTasbihStore.getState();
+    const completed = new Map(
+      (
+        cloudSettings.tasbih?.completedSessions ||
+        cloudSettings.tasbihCompletedSessions ||
+        []
+      ).map((s) => [s.id, s]),
+    );
+    dhikr.completedSessions.forEach((s) => completed.set(s.id, s));
+    duringHydration(() => {
+      farm.hydrateFromCloud({
+        trees: [...trees.values()],
+        activeTreeId: farm.activeTreeId,
       });
-    }
+      dhikr.hydrateFromCloud({
+        completedSessions: [...completed.values()].sort((a, b) =>
+          a.completedAt.localeCompare(b.completedAt),
+        ),
+      });
+    });
+  }
+  if (cloudHasState && !localHasChanges) {
+    duringHydration(() => {
+      if (Object.keys(state.settings ?? {}).length > 0) {
+        const cloudSettings = state.settings as Partial<SettingsSnapshot> & {
+          arabicFontId?: string;
+        };
+        const {
+          arabicFontId: _legacy,
+          tasbihCompletedSessions,
+          tasbih,
+          ...settings
+        } = cloudSettings;
+        void _legacy;
+        useSettingsStore.getState().hydrateFromCloud(settings);
+        if (tasbihCompletedSessions) {
+          useTasbihStore
+            .getState()
+            .hydrateFromCloud({ completedSessions: tasbihCompletedSessions });
+        }
+        if (tasbih) useTasbihStore.getState().hydrateFromCloud(tasbih);
+      }
+      const farm = state.farm as Partial<FarmSnapshot>;
+      if (farm?.trees) {
+        useFarmStore.getState().hydrateFromCloud({
+          trees: farm.trees,
+          activeTreeId: farm.activeTreeId ?? null,
+        });
+      }
+    });
   }
 
-  if (sessionRows && sessionRows.length > 0) {
-    useSessionsStore
-      .getState()
-      .hydrateFromCloud((sessionRows as SessionRow[]).map(fromSessionRow));
+  if (sessionRows) {
+    const local = useSessionsStore.getState().sessions;
+    const merged = new Map(local.map((s) => [s.id, s]));
+    (sessionRows as SessionRow[])
+      .map(fromSessionRow)
+      .forEach((s) => merged.set(s.id, s));
+    duringHydration(() =>
+      useSessionsStore
+        .getState()
+        .hydrateFromCloud(
+          [...merged.values()].sort((a, b) =>
+            a.completedAt.localeCompare(b.completedAt),
+          ),
+        ),
+    );
   }
 
   // Fresh account: seed the cloud with whatever the user built locally.
-  if (!cloudHasState) {
+  if (!cloudHasState || localHasChanges) {
     await pushStateToCloud(supabase, userId);
+  }
+  if (isCurrent()) {
     const localSessions = useSessionsStore.getState().sessions;
-    if (localSessions.length > 0) {
-      await supabase
-        .from("sessions")
-        .upsert(localSessions.map((s) => toSessionRow(s, userId)), { onConflict: "id" });
-    }
+    const cloudIds = new Set(sessionRows?.map((s) => s.id));
+    await writeSessions(
+      supabase,
+      userId,
+      localSessions.filter((s) => !cloudIds.has(s.id)),
+    );
   }
 }
 
 async function pushStateToCloud(supabase: SupabaseClient, userId: string) {
+  const revision = unsyncedRevision(userId);
   const settings = settingsSnapshot();
-  await supabase.from("user_state").upsert(
+  const { error } = await supabase.from("user_state").upsert(
     {
       user_id: userId,
       settings,
@@ -140,6 +261,8 @@ async function pushStateToCloud(supabase: SupabaseClient, userId: string) {
     },
     { onConflict: "user_id" },
   );
+  if (error) throw error;
+  markAccountSynced(userId, revision);
 
   // Keep the account profile's display name in step with local settings
   // (e.g. when edited on the Settings page). Never blank it out.
@@ -154,12 +277,48 @@ async function pushStateToCloud(supabase: SupabaseClient, userId: string) {
 }
 
 /** Subscribe to local stores and mirror changes to Supabase. Returns a cleanup fn. */
-export function startSync(supabase: SupabaseClient, userId: string): () => void {
+export function startSync(
+  supabase: SupabaseClient,
+  userId: string,
+  onError: (message: string | null) => void = () => {},
+): () => void {
   let stateTimeout: ReturnType<typeof setTimeout> | null = null;
+  let stopped = false;
+  let pending = false;
+  let inFlight = false;
+  const knownIds = new Set(
+    useSessionsStore.getState().sessions.map((s) => s.id),
+  );
+  // Serial writes prevent an older slow request from overwriting a newer snapshot.
+  const flush = async () => {
+    if (stopped || inFlight || !pending) return;
+    inFlight = true;
+    pending = false;
+    try {
+      await pushStateToCloud(supabase, userId);
+      const sessions = useSessionsStore
+        .getState()
+        .sessions.filter((s) => !knownIds.has(s.id));
+      if (!stopped && sessions.length) {
+        await writeSessions(supabase, userId, sessions);
+        sessions.forEach((s) => knownIds.add(s.id));
+      }
+      if (!stopped) onError(null);
+    } catch {
+      pending = true;
+      if (!stopped)
+        onError(
+          "Cloud sync failed. Progress is saved on this device; reconnect or make a change to retry.",
+        );
+    } finally {
+      inFlight = false;
+    }
+  };
 
   const queueStatePush = () => {
     if (stateTimeout) clearTimeout(stateTimeout);
-    stateTimeout = setTimeout(() => void pushStateToCloud(supabase, userId), 2000);
+    pending = true;
+    stateTimeout = setTimeout(() => void flush(), 2000);
   };
 
   const unsubSettings = useSettingsStore.subscribe(queueStatePush);
@@ -167,19 +326,20 @@ export function startSync(supabase: SupabaseClient, userId: string): () => void 
   const unsubTasbih = useTasbihStore.subscribe(queueStatePush);
 
   // Sessions are append-only: push new rows as they appear.
-  let knownCount = useSessionsStore.getState().sessions.length;
-  const unsubSessions = useSessionsStore.subscribe((state) => {
-    const sessions = state.sessions;
-    if (sessions.length > knownCount) {
-      const newOnes = sessions.slice(knownCount);
-      void supabase
-        .from("sessions")
-        .upsert(newOnes.map((s) => toSessionRow(s, userId)), { onConflict: "id" });
-    }
-    knownCount = sessions.length;
-  });
+  const unsubSessions = useSessionsStore.subscribe(queueStatePush);
+  const retry = () => {
+    pending = true;
+    void flush();
+  };
+  window.addEventListener("online", retry);
+  const retryInterval = setInterval(() => {
+    if (pending) void flush();
+  }, 15000);
 
   return () => {
+    stopped = true;
+    clearInterval(retryInterval);
+    window.removeEventListener("online", retry);
     if (stateTimeout) clearTimeout(stateTimeout);
     unsubSettings();
     unsubFarm();

@@ -4,7 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
-import { AuthCard, FormMessage, GoogleAuthSection } from "@/components/auth/auth-card";
+import {
+  AuthCard,
+  FormMessage,
+  GoogleAuthSection,
+} from "@/components/auth/auth-card";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 
@@ -36,7 +40,7 @@ export default function RegisterPage() {
       setBusy(false);
     } else if (result.needsEmailConfirmation) {
       setSuccess(
-        "Your account was created successfully! We've sent a confirmation link to your email — click it, and you'll be asked to choose your display name.",
+        "Check your inbox for a confirmation link if this address is eligible. After confirming, you can choose your display name. Already registered? Sign in or reset your password.",
       );
       setBusy(false);
     } else {

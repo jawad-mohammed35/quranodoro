@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { GROWTH_STAGES } from "@/data/trees";
 import { cn } from "@/lib/utils";
 
@@ -15,7 +15,13 @@ interface TreeVisualProps {
  * Emoji-based tree art with a soft "ground" mound. Stages can later be
  * swapped for illustrations by changing only this component.
  */
-export function TreeVisual({ stageIndex, growing = false, size = "sm" }: TreeVisualProps) {
+export function TreeVisual({
+  stageIndex,
+  growing = false,
+  size = "sm",
+}: TreeVisualProps) {
+  const reduceMotion = useReducedMotion();
+  growing = growing && !reduceMotion;
   const stage = GROWTH_STAGES[Math.min(stageIndex, GROWTH_STAGES.length - 1)];
   const isPremium = stageIndex >= GROWTH_STAGES.length - 1;
 
@@ -46,9 +52,17 @@ export function TreeVisual({ stageIndex, growing = false, size = "sm" }: TreeVis
         {isPremium ? "🌴" : stage.emoji}
         {isPremium && (
           <motion.span
-            className={cn("absolute -right-2 -top-2", size === "lg" ? "text-3xl" : "text-lg")}
-            animate={{ opacity: [1, 0.4, 1], rotate: [0, 12, 0] }}
-            transition={{ repeat: Infinity, duration: 3 }}
+            className={cn(
+              "absolute -right-2 -top-2",
+              size === "lg" ? "text-3xl" : "text-lg",
+            )}
+            animate={{
+              opacity: reduceMotion ? 1 : [1, 0.4, 1],
+              rotate: reduceMotion ? 0 : [0, 12, 0],
+            }}
+            transition={
+              reduceMotion ? { duration: 0 } : { repeat: Infinity, duration: 3 }
+            }
             aria-hidden
           >
             ✨

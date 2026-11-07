@@ -12,6 +12,10 @@
 
 # testing
 /coverage
+/test-results/
+/playwright-report/
+audit.local.json
+.reciters-reference.json
 
 # next.js
 /.next/

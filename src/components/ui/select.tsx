@@ -8,7 +8,7 @@ export const Select = forwardRef<
   HTMLSelectElement,
   React.SelectHTMLAttributes<HTMLSelectElement>
 >(({ className, children, ...props }, ref) => (
-  <div className="relative">
+  <div className="relative min-w-0 w-full">
     <select
       ref={ref}
       className={cn(

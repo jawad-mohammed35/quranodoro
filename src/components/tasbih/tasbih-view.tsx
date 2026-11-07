@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-const PRESET_TARGETS = [33, 99] as const;
+const PRESET_TARGETS = [33, 99, 100] as const;
 
 function StatBox({ label, value }: { label: string; value: string }) {
   return (
@@ -34,6 +34,27 @@ export function TasbihView() {
   const { t } = useTranslation();
 
   const count = useTasbihStore((s) => s.count);
+  const phrase = useTasbihStore((s) => s.phrase);
+  const feedback = useTasbihStore((s) => s.feedback);
+  const changeTarget = (value: number) => {
+    if (
+      count &&
+      !window.confirm(
+        "Changing the target starts a new count. Continue? Completed history will be kept.",
+      )
+    )
+      return;
+    setTarget(value);
+  };
+  const confirmReset = (action: () => void) => {
+    if (
+      !count ||
+      window.confirm(
+        "Reset your current count? Completed dhikr history will be kept.",
+      )
+    )
+      action();
+  };
   const target = useTasbihStore((s) => s.target);
   const justCompleted = useTasbihStore((s) => s.justCompleted);
   const completedSessions = useTasbihStore((s) => s.completedSessions);
@@ -56,7 +77,7 @@ export function TasbihView() {
     e.preventDefault();
     const value = Number(customValue);
     if (!Number.isFinite(value) || value < 1) return;
-    setTarget(value);
+    changeTarget(value);
     setShowCustom(false);
     setCustomValue("");
   };
@@ -65,12 +86,45 @@ export function TasbihView() {
 
   return (
     <>
-      <PageHeader title={t("tasbih.title")} description={t("tasbih.description")} />
+      <PageHeader
+        title={t("tasbih.title")}
+        description={t("tasbih.description")}
+      />
 
       {mounted && (
         <div className="flex flex-col gap-6">
           <Card>
             <CardContent className="flex flex-col items-center gap-8 py-10 sm:py-14">
+              <div className="flex w-full max-w-sm flex-col gap-2">
+                <Label htmlFor="dhikr-phrase">Dhikr phrase</Label>
+                <Input
+                  id="dhikr-phrase"
+                  list="dhikr-phrases"
+                  maxLength={160}
+                  value={phrase}
+                  onChange={(e) =>
+                    useTasbihStore.setState({ phrase: e.target.value })
+                  }
+                  onBlur={() => useTasbihStore.getState().setPhrase(phrase)}
+                />
+                <datalist id="dhikr-phrases">
+                  <option value="SubhanAllah" />
+                  <option value="Alhamdulillah" />
+                  <option value="Allahu Akbar" />
+                  <option value="La ilaha illallah" />
+                  <option value="Astaghfirullah" />
+                </datalist>
+                <label className="flex min-h-11 items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={feedback}
+                    onChange={(e) =>
+                      useTasbihStore.getState().setFeedback(e.target.checked)
+                    }
+                  />
+                  Vibration feedback (supported devices)
+                </label>
+              </div>
               <div className="relative flex items-center justify-center">
                 <AnimatePresence>
                   {justCompleted && (
@@ -101,7 +155,10 @@ export function TasbihView() {
 
                 <motion.button
                   type="button"
-                  onClick={increment}
+                  onClick={() => {
+                    increment();
+                    if (feedback && navigator.vibrate) navigator.vibrate(15);
+                  }}
                   aria-label={t("common.tapToCount")}
                   className={cn(
                     "relative flex h-56 w-56 flex-col items-center justify-center rounded-full border-4 transition-colors sm:h-64 sm:w-64",
@@ -146,8 +203,13 @@ export function TasbihView() {
                         exit={{ opacity: 0, y: -8 }}
                         className="relative z-10 flex flex-col items-center gap-1 px-4 text-center"
                       >
-                        <Sparkles className="h-6 w-6 text-primary" aria-hidden />
-                        <span className="text-lg font-semibold">{t("tasbih.sessionComplete")}</span>
+                        <Sparkles
+                          className="h-6 w-6 text-primary"
+                          aria-hidden
+                        />
+                        <span className="text-lg font-semibold">
+                          {t("tasbih.sessionComplete")}
+                        </span>
                         <span className="text-xs text-muted-foreground">
                           {t("tasbih.mayAllahAccept")}
                         </span>
@@ -176,11 +238,13 @@ export function TasbihView() {
                 {PRESET_TARGETS.map((preset) => (
                   <Button
                     key={preset}
-                    variant={target === preset && !showCustom ? "primary" : "outline"}
+                    variant={
+                      target === preset && !showCustom ? "primary" : "outline"
+                    }
                     size="sm"
                     className="min-w-14 rounded-full"
                     onClick={() => {
-                      setTarget(preset);
+                      changeTarget(preset);
                       setShowCustom(false);
                     }}
                   >
@@ -207,7 +271,9 @@ export function TasbihView() {
                     exit={{ opacity: 0, height: 0 }}
                     className="flex w-full max-w-xs flex-col gap-2 overflow-hidden"
                   >
-                    <Label htmlFor="tasbih-custom-target">{t("tasbih.customTarget")}</Label>
+                    <Label htmlFor="tasbih-custom-target">
+                      {t("tasbih.customTarget")}
+                    </Label>
                     <div className="flex gap-2">
                       <Input
                         id="tasbih-custom-target"
@@ -225,11 +291,19 @@ export function TasbihView() {
               </AnimatePresence>
 
               <div className="flex flex-wrap items-center justify-center gap-3">
-                <Button variant="outline" size="sm" onClick={reset}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => confirmReset(reset)}
+                >
                   <RotateCcw className="h-4 w-4" aria-hidden />
                   {t("tasbih.resetCounter")}
                 </Button>
-                <Button variant="ghost" size="sm" onClick={startNewSession}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => confirmReset(startNewSession)}
+                >
                   {t("tasbih.startNewSession")}
                 </Button>
               </div>

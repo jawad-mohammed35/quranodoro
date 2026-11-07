@@ -19,7 +19,8 @@
   --border: #e7e3d7;
   --ring: #6b9071;
   --danger: #c07b6d;
-  --shadow-card: 0 1px 2px rgb(51 63 48 / 0.04), 0 4px 16px rgb(51 63 48 / 0.06);
+  --shadow-card:
+    0 1px 2px rgb(51 63 48 / 0.04), 0 4px 16px rgb(51 63 48 / 0.06);
 }
 
 .dark {
@@ -73,10 +74,89 @@ html {
 
 body {
   background: var(--background);
+  background-image: radial-gradient(
+    ellipse at 90% 0%,
+    color-mix(in srgb, var(--primary-soft) 55%, transparent),
+    transparent 65%
+  );
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
-  transition: background-color 200ms ease, color 200ms ease;
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+}
+
+.glass-surface {
+  background: color-mix(in srgb, var(--card) 91%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    var(--shadow-card);
+}
+.dashboard-panel {
+  min-width: 0;
+  border-radius: var(--radius-card);
+}
+.panel-content {
+  height: 100%;
+  min-width: 0;
+  overflow: auto;
+  border-radius: var(--radius-card);
+}
+.panel-content > * {
+  min-height: 100%;
+}
+.is-editing .panel-content {
+  height: calc(100% - 40px);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+.is-editing {
+  outline: 1px dashed var(--primary);
+}
+.react-grid-item.react-grid-placeholder {
+  background: var(--primary-soft);
+  opacity: 0.7;
+  border-radius: var(--radius-card);
+}
+.react-resizable-handle {
+  width: 28px;
+  height: 28px;
+  touch-action: none;
+}
+.react-resizable-handle::after {
+  border-color: var(--primary) !important;
+}
+button,
+a,
+input,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+select,
+input {
+  max-width: 100%;
+}
+@media (pointer: coarse) {
+  button {
+    min-height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 ::selection {

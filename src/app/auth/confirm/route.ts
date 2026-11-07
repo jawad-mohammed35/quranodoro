@@ -1,3 +1,4 @@
+import { safeAuthPath } from "@/lib/auth-redirect";
 import { type EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/utils/supabase/server";
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
   const next = searchParams.get("next") ?? "/";
 
   const redirectTo = request.nextUrl.clone();
-  redirectTo.pathname = next.startsWith("/") ? next : "/";
+  redirectTo.pathname = safeAuthPath(next);
   redirectTo.search = "";
 
   if (token_hash && type) {

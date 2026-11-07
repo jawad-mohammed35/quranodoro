@@ -19,6 +19,7 @@ import { useTimerStore } from "@/stores/timer-store";
  */
 export function QuranAudioEngine() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playAttempt = useRef(0);
 
   const playback = usePlayerStore((s) => s.playback);
   const report = usePlayerStore((s) => s._report);
@@ -39,25 +40,40 @@ export function QuranAudioEngine() {
 
     const onTime = () =>
       report({ currentTime: audio.currentTime, duration: audio.duration || 0 });
-    const onPlaying = () => report({ playback: "playing" });
-    const onPause = () => {
-      // Distinguish a natural pause from stop (src cleared).
-      if (usePlayerStore.getState().playback !== "stopped") {
-        report({ playback: "paused" });
-      }
+    const onPlaying = () => {
+      const intent = usePlayerStore.getState().playback;
+      if (intent === "loading" || intent === "playing")
+        report({ playback: "playing" });
     };
-    const onError = () => report({ playback: "error" });
+    const onWaiting = () => {
+      if (usePlayerStore.getState().playback === "playing")
+        report({ playback: "loading" });
+    };
+    const onPause = () => {
+      // Honor a browser/audio-focus pause without overriding a pending source
+      // change, stop, or explicit pause intent.
+      if (usePlayerStore.getState().playback === "playing" && !audio.ended)
+        report({ playback: "paused" });
+    };
+    const onError = () => {
+      if (usePlayerStore.getState().playback !== "stopped")
+        report({ playback: "error" });
+    };
     const onEnded = () => {
       // Continue with the next surah, wrapping at 114.
       const { surahNumber: current } = useSettingsStore.getState();
       const next = current >= 114 ? 1 : current + 1;
       useSettingsStore.getState().setSetting("surahNumber", next);
-      usePlayerStore.getState().requestPlay(usePlayerStore.getState().userInitiated);
+      usePlayerStore
+        .getState()
+        .requestPlay(usePlayerStore.getState().userInitiated);
     };
 
     audio.addEventListener("timeupdate", onTime);
     audio.addEventListener("playing", onPlaying);
+    audio.addEventListener("waiting", onWaiting);
     audio.addEventListener("pause", onPause);
+    audio.addEventListener("loadedmetadata", onTime);
     audio.addEventListener("error", onError);
     audio.addEventListener("ended", onEnded);
 
@@ -65,7 +81,9 @@ export function QuranAudioEngine() {
       audio.pause();
       audio.removeEventListener("timeupdate", onTime);
       audio.removeEventListener("playing", onPlaying);
+      audio.removeEventListener("waiting", onWaiting);
       audio.removeEventListener("pause", onPause);
+      audio.removeEventListener("loadedmetadata", onTime);
       audio.removeEventListener("error", onError);
       audio.removeEventListener("ended", onEnded);
       audioRef.current = null;
@@ -81,15 +99,23 @@ export function QuranAudioEngine() {
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
+    const attempt = ++playAttempt.current;
+    const play = () =>
+      audio.play().catch((error: DOMException) => {
+        // Source changes and pauses intentionally cancel earlier play promises.
+        if (attempt === playAttempt.current && error.name !== "AbortError")
+          report({ playback: "error" });
+      });
 
     const url = getSurahAudioUrl(getReciter(reciterId), surahNumber);
 
     if (playback === "loading") {
+      if (audio.error) audio.load();
       if (audio.src !== url) {
         audio.src = url;
         report({ currentTime: 0, duration: 0 });
       }
-      audio.play().catch(() => report({ playback: "error" }));
+      void play();
     } else if (playback === "paused") {
       audio.pause();
     } else if (playback === "stopped") {
@@ -100,21 +126,42 @@ export function QuranAudioEngine() {
     } else if (playback === "playing" && audio.src !== url) {
       // Reciter or surah changed mid-playback: switch seamlessly.
       audio.src = url;
-      report({ currentTime: 0, duration: 0 });
-      audio.play().catch(() => report({ playback: "error" }));
+      report({ playback: "loading", currentTime: 0, duration: 0 });
     }
+  }, [playback, reciterId, surahNumber, report]);
+
+  useEffect(() => {
+    if (playback !== "loading") return;
+    // Some media engines leave a play promise pending after a stalled request.
+    const timeout = setTimeout(() => {
+      playAttempt.current++;
+      audioRef.current?.pause();
+      report({ playback: "error" });
+    }, 15000);
+    return () => clearTimeout(timeout);
   }, [playback, reciterId, surahNumber, report]);
 
   // Timer-driven automation: recite during focus, pause on breaks/stop.
   useEffect(() => {
-    const { playback: current, userInitiated, requestPlay, requestPause } =
-      usePlayerStore.getState();
+    const {
+      playback: current,
+      userInitiated,
+      requestPlay,
+      requestPause,
+    } = usePlayerStore.getState();
 
     if (timerStatus === "running" && timerPhase === "focus") {
-      if (playQuranDuringFocus && current !== "playing" && current !== "loading") {
+      if (
+        playQuranDuringFocus &&
+        current !== "playing" &&
+        current !== "loading"
+      ) {
         requestPlay(false);
       }
-    } else if (!userInitiated && (current === "playing" || current === "loading")) {
+    } else if (
+      !userInitiated &&
+      (current === "playing" || current === "loading")
+    ) {
       // Only auto-pause playback that the timer itself started.
       requestPause();
     }

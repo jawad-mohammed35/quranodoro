@@ -1,7 +1,8 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
+import { accountStorage } from "@/lib/account-storage";
 import { uid } from "@/lib/utils";
 
 export interface TasbihCompletion {
@@ -9,9 +10,14 @@ export interface TasbihCompletion {
   /** ISO date-time when the session was completed. */
   completedAt: string;
   target: number;
+  phrase?: string;
 }
 
 interface TasbihState {
+  phrase: string;
+  feedback: boolean;
+  setPhrase: (phrase: string) => void;
+  setFeedback: (enabled: boolean) => void;
   count: number;
   target: number;
   /** Shown briefly after reaching the target. */
@@ -26,13 +32,21 @@ interface TasbihState {
   hydrateFromCloud: (data: Partial<TasbihSnapshot>) => void;
 }
 
-export type TasbihSnapshot = Pick<TasbihState, "completedSessions">;
+export type TasbihSnapshot = Pick<
+  TasbihState,
+  "completedSessions" | "count" | "target" | "phrase" | "feedback"
+>;
 
 export const DEFAULT_TASBIH_TARGET = 33;
 
 export const useTasbihStore = create<TasbihState>()(
   persist(
     (set, get) => ({
+      phrase: "SubhanAllah",
+      feedback: false,
+      setPhrase: (phrase) =>
+        set({ phrase: phrase.trim().slice(0, 160) || "SubhanAllah" }),
+      setFeedback: (feedback) => set({ feedback }),
       count: 0,
       target: DEFAULT_TASBIH_TARGET,
       justCompleted: false,
@@ -46,6 +60,7 @@ export const useTasbihStore = create<TasbihState>()(
             id: uid(),
             completedAt: new Date().toISOString(),
             target,
+            phrase: get().phrase,
           };
           set({
             count: 0,
@@ -60,6 +75,7 @@ export const useTasbihStore = create<TasbihState>()(
       reset: () => set({ count: 0, justCompleted: false }),
 
       setTarget: (target) => {
+        if (!Number.isFinite(target)) return;
         const safe = Math.max(1, Math.min(9999, Math.floor(target)));
         set({ target: safe, count: 0, justCompleted: false });
       },
@@ -70,7 +86,10 @@ export const useTasbihStore = create<TasbihState>()(
 
       hydrateFromCloud: (data) => set(data),
     }),
-    { name: "quranodoro-tasbih" },
+    {
+      name: "quranodoro-tasbih",
+      storage: createJSONStorage(() => accountStorage),
+    },
   ),
 );
 
@@ -84,7 +103,8 @@ function localDateKey(d: Date): string {
 
 export function tasbihCompletedToday(sessions: TasbihCompletion[]): number {
   const today = localDateKey(new Date());
-  return sessions.filter((s) => localDateKey(new Date(s.completedAt)) === today).length;
+  return sessions.filter((s) => localDateKey(new Date(s.completedAt)) === today)
+    .length;
 }
 
 export function tasbihCompletedLastNDays(

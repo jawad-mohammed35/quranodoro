@@ -1,13 +1,10 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
+import { accountStorage } from "@/lib/account-storage";
 import type { FarmTree, TreeTypeId } from "@/lib/types";
-import {
-  FINAL_STAGE_INDEX,
-  getTreeType,
-  stageForGp,
-} from "@/data/trees";
+import { FINAL_STAGE_INDEX, getTreeType, stageForGp } from "@/data/trees";
 import { uid } from "@/lib/utils";
 
 interface FarmState {
@@ -19,7 +16,10 @@ interface FarmState {
   setActiveTree: (id: string) => void;
   /** Award GP to the active tree (called when a focus session completes). */
   awardGrowthPoints: (gp: number) => void;
-  hydrateFromCloud: (data: { trees: FarmTree[]; activeTreeId: string | null }) => void;
+  hydrateFromCloud: (data: {
+    trees: FarmTree[];
+    activeTreeId: string | null;
+  }) => void;
 }
 
 export const useFarmStore = create<FarmState>()(
@@ -60,7 +60,8 @@ export const useFarmStore = create<FarmState>()(
             if (tree.id !== state.activeTreeId || tree.maturedAt) return tree;
             const newGp = tree.gp + gp;
             const multiplier = getTreeType(tree.typeId).gpMultiplier;
-            const reachedFinal = stageForGp(newGp, multiplier) >= FINAL_STAGE_INDEX;
+            const reachedFinal =
+              stageForGp(newGp, multiplier) >= FINAL_STAGE_INDEX;
             if (reachedFinal) matured = true;
             return {
               ...tree,
@@ -77,6 +78,9 @@ export const useFarmStore = create<FarmState>()(
 
       hydrateFromCloud: (data) => set(data),
     }),
-    { name: "quranodoro-farm" },
+    {
+      name: "quranodoro-farm",
+      storage: createJSONStorage(() => accountStorage),
+    },
   ),
 );
