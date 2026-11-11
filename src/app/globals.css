@@ -200,3 +200,93 @@ input[type="range"]::-moz-range-thumb {
   cursor: pointer;
   border: none;
 }
+
+html.dark,
+.dark body {
+  background: var(--background);
+}
+.confirm-dialog {
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 160ms,
+    transform 160ms,
+    overlay 160ms allow-discrete,
+    display 160ms allow-discrete;
+}
+.confirm-dialog[open] {
+  opacity: 1;
+  transform: translateY(0);
+}
+@starting-style {
+  .confirm-dialog[open] {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.confirm-dialog::backdrop {
+  background: rgb(20 30 22 / 0.32);
+  backdrop-filter: blur(4px);
+}
+
+.react-grid-item.dashboard-panel {
+  transition-property: transform, width, height, box-shadow;
+  transition-duration: 220ms;
+  transition-timing-function: cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+.dashboard-panel.react-draggable-dragging,
+.dashboard-panel.resizing {
+  transition: none;
+  box-shadow: 0 10px 28px rgb(35 52 40 / 0.2);
+}
+.dashboard-panel .panel-drag-handle:active {
+  cursor: grabbing;
+}
+.dashboard-panel.is-editing > .react-resizable-handle {
+  width: 28px;
+  height: 28px;
+  opacity: 1;
+}
+.react-grid-layout > .react-grid-placeholder {
+  background: var(--primary-soft);
+  opacity: 0.65;
+}
+.panel-content {
+  container-type: size;
+  animation: widget-appear 180ms ease-out;
+}
+@keyframes widget-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.panel-content .rounded-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100%;
+}
+.panel-content .rounded-card > div {
+  padding-inline: clamp(0.85rem, 6cqw, 1.75rem);
+}
+.panel-content .text-5xl {
+  font-size: clamp(2rem, 15cqmin, 4rem);
+}
+.panel-content .text-xl.tabular-nums {
+  font-size: clamp(1.25rem, 18cqmin, 2rem);
+  white-space: normal;
+}
+.panel-content .rounded-card:has(.tabular-nums) {
+  gap: clamp(0rem, 2cqh, 0.75rem);
+}
+@container (max-height: 240px) {
+  .panel-content .rounded-card > div {
+    padding-block: 0.55rem;
+  }
+  .panel-content .flex-col.gap-4 {
+    gap: 0.45rem;
+  }
+}

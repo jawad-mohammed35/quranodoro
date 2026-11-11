@@ -1,8 +1,5 @@
-import type { Metadata } from "next";
-import { AboutView } from "@/components/about/about-view";
-
-export const metadata: Metadata = { title: "About the Developer" };
+import { redirect } from "next/navigation";
 
 export default function AboutPage() {
-  return <AboutView />;
+  redirect("/settings/about");
 }

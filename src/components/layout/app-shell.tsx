@@ -17,7 +17,6 @@ import {
   Settings,
   TimerIcon,
   TreePalm,
-  User,
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -65,11 +64,6 @@ const NAV_ITEMS = [
     labelKey: "nav.settings" as TranslationKey,
     icon: Settings,
   },
-  {
-    href: "/about",
-    labelKey: "nav.aboutDeveloper" as TranslationKey,
-    icon: User,
-  },
 ] as const;
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
@@ -79,7 +73,9 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <nav className="flex flex-col gap-1" aria-label="Main navigation">
       {NAV_ITEMS.map(({ href, labelKey, icon: Icon }) => {
-        const active = pathname === href;
+        const active =
+          pathname === href ||
+          (href === "/settings" && pathname.startsWith("/settings/"));
         return (
           <Link
             key={href}
@@ -196,8 +192,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         first.focus();
       }
     };
+    const desktop = matchMedia("(min-width: 64rem)");
+    const onResize = () => {
+      if (desktop.matches) setMobileOpen(false);
+    };
+    desktop.addEventListener("change", onResize);
     document.addEventListener("keydown", onKey);
     return () => {
+      desktop.removeEventListener("change", onResize);
       document.body.style.overflow = overflow;
       document.removeEventListener("keydown", onKey);
       previous?.focus();
@@ -264,23 +266,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               role="dialog"
               aria-modal="true"
               aria-label="Navigation"
-              className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[90vw] overflow-y-auto flex-col gap-6 border-r border-border glass-surface px-3 py-6 lg:hidden"
-              initial={{ x: "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
+              className="fixed right-3 top-14 z-50 flex max-h-[calc(100dvh-4rem)] w-72 max-w-[calc(100vw-1.5rem)] origin-top-right overflow-y-auto flex-col gap-3 rounded-card border border-border glass-surface p-3 lg:hidden"
+              initial={{ opacity: 0, y: -6, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6, scale: 0.98 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
             >
-              <div className="flex items-center justify-between">
-                <Brand />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={t("common.closeMenu")}
-                  onClick={close}
-                >
-                  <X className="h-5 w-5" />
-                </Button>
-              </div>
               <NavLinks onNavigate={close} />
               <div className="mt-auto">
                 <AuthSection onNavigate={close} />

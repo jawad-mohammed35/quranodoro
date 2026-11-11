@@ -63,12 +63,6 @@ export function ActiveNavIcon({ href }: { href: string }) {
         <circle cx="12" cy="12" r="3" fill="var(--card)" />
       </>
     ),
-    "/about": (
-      <>
-        <circle cx="12" cy="7" r="5" />
-        <path d="M2 22v-3c0-8 20-8 20 0v3z" />
-      </>
-    ),
   };
   return (
     <svg

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { RotateCcw, Sparkles, Target } from "lucide-react";
 import {
   useTasbihStore,
@@ -36,32 +37,13 @@ export function TasbihView() {
   const count = useTasbihStore((s) => s.count);
   const phrase = useTasbihStore((s) => s.phrase);
   const feedback = useTasbihStore((s) => s.feedback);
-  const changeTarget = (value: number) => {
-    if (
-      count &&
-      !window.confirm(
-        "Changing the target starts a new count. Continue? Completed history will be kept.",
-      )
-    )
-      return;
-    setTarget(value);
-  };
-  const confirmReset = (action: () => void) => {
-    if (
-      !count ||
-      window.confirm(
-        "Reset your current count? Completed dhikr history will be kept.",
-      )
-    )
-      action();
-  };
+  const [resetOpen, setResetOpen] = useState(false);
   const target = useTasbihStore((s) => s.target);
   const justCompleted = useTasbihStore((s) => s.justCompleted);
   const completedSessions = useTasbihStore((s) => s.completedSessions);
   const increment = useTasbihStore((s) => s.increment);
   const reset = useTasbihStore((s) => s.reset);
   const setTarget = useTasbihStore((s) => s.setTarget);
-  const startNewSession = useTasbihStore((s) => s.startNewSession);
   const dismissCompletion = useTasbihStore((s) => s.dismissCompletion);
 
   const [customValue, setCustomValue] = useState("");
@@ -77,15 +59,22 @@ export function TasbihView() {
     e.preventDefault();
     const value = Number(customValue);
     if (!Number.isFinite(value) || value < 1) return;
-    changeTarget(value);
+    setTarget(value);
     setShowCustom(false);
     setCustomValue("");
   };
 
-  const progress = target > 0 ? count / target : 0;
+  const progress = target > 0 ? Math.min(1, count / target) : 0;
 
   return (
     <>
+      <ConfirmDialog
+        open={resetOpen}
+        onDismiss={() => setResetOpen(false)}
+        onConfirm={reset}
+        title="Reset counter?"
+        description="Your current count will return to zero. Your completed dhikr history will be kept."
+      />
       <PageHeader
         title={t("tasbih.title")}
         description={t("tasbih.description")}
@@ -244,7 +233,7 @@ export function TasbihView() {
                     size="sm"
                     className="min-w-14 rounded-full"
                     onClick={() => {
-                      changeTarget(preset);
+                      setTarget(preset);
                       setShowCustom(false);
                     }}
                   >
@@ -294,7 +283,7 @@ export function TasbihView() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => confirmReset(reset)}
+                  onClick={() => setResetOpen(true)}
                 >
                   <RotateCcw className="h-4 w-4" aria-hidden />
                   {t("tasbih.resetCounter")}
@@ -302,7 +291,7 @@ export function TasbihView() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => confirmReset(startNewSession)}
+                  onClick={() => setResetOpen(true)}
                 >
                   {t("tasbih.startNewSession")}
                 </Button>

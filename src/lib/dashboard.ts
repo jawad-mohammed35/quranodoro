@@ -52,6 +52,24 @@ export function defaultDashboard(): DashboardPreferences {
     hidden: [],
   };
 }
+export function panelLimits(id: string, mode: "desktop" | "mobile") {
+  const panel = DASHBOARD_PANELS.find((p) => p.id === id)!;
+  const stat = panel.h === 3;
+  return {
+    minW: mode === "mobile" ? 1 : panel.id === "reciter" ? 6 : 4,
+    maxW:
+      mode === "mobile"
+        ? 1
+        : stat
+          ? 6
+          : panel.id === "week" || panel.id === "reciter"
+            ? 12
+            : 8,
+    minH: panel.h,
+    maxH: panel.h + (stat ? 1 : 3),
+  };
+}
+
 /** Old or malformed snapshots cannot introduce unknown or invalid grid items. */
 export function normalizeDashboard(
   value?: Partial<DashboardPreferences>,
@@ -66,16 +84,17 @@ export function normalizeDashboard(
       if (!item || ![item.x, item.y, item.w, item.h].every(Number.isFinite))
         return fallback;
       const cols = mode === "desktop" ? 12 : 1;
+      const limits = panelLimits(fallback.i, mode);
       const w = Math.max(
-        mode === "desktop" ? 4 : 1,
-        Math.min(cols, Math.round(item.w)),
+        limits.minW,
+        Math.min(limits.maxW, Math.round(item.w)),
       );
       return {
         i: fallback.i,
         x: Math.max(0, Math.min(cols - w, Math.round(item.x))),
         y: Math.max(0, Math.round(item.y)),
         w,
-        h: Math.max(fallback.h, Math.min(30, Math.round(item.h))),
+        h: Math.max(fallback.h, Math.min(limits.maxH, Math.round(item.h))),
       };
     });
   }

@@ -124,7 +124,7 @@ export function PomodoroView() {
         description={t("pomodoro.description")}
       />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+      <div className="grid items-start grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <Card>
           <CardContent className="flex flex-col gap-6 p-6 sm:p-8">
             {mounted ? (
@@ -180,15 +180,14 @@ export function PomodoroView() {
               <PlayerControls />
             </CardContent>
           </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("pomodoro.presets")}</CardTitle>
+            </CardHeader>
+            <CardContent>{mounted && <PresetManager />}</CardContent>
+          </Card>
         </div>
       </div>
-
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>{t("pomodoro.presets")}</CardTitle>
-        </CardHeader>
-        <CardContent>{mounted && <PresetManager />}</CardContent>
-      </Card>
     </>
   );
 }

@@ -50,8 +50,8 @@ test("dashboard defaults are complete, independent, and validate malformed sizes
     desktop: [{ i: "focus", x: 100, y: -10, w: 50, h: 1 }],
     hidden: ["tree"],
   });
-  assert.equal(fixed.desktop[0].x, 0);
-  assert.equal(fixed.desktop[0].w, 12);
+  assert.equal(fixed.desktop[0].x, 4);
+  assert.equal(fixed.desktop[0].w, 8);
   assert.equal(fixed.desktop[0].h, 6);
   assert.equal(fixed.mobile.length, 9);
   assert.deepEqual(fixed.hidden, ["tree"]);
@@ -130,6 +130,18 @@ test("tasbih records phrase and target, reset preserves history, NaN is ignored"
   s.setTarget(NaN);
   assert.equal(useTasbihStore.getState().target, 1);
 });
+test("tasbih preserves progress above smaller targets and records only a new target crossing", () => {
+  const s = useTasbihStore.getState();
+  s.hydrateFromCloud({ count: 5, target: 33 });
+  for (const target of [99, 2, 100, 6]) {
+    s.setTarget(target);
+    assert.equal(useTasbihStore.getState().count, 5);
+  }
+  s.increment();
+  s.increment();
+  assert.equal(useTasbihStore.getState().count, 7);
+  assert.equal(useTasbihStore.getState().completedSessions.length, 1);
+});
 test("account changes isolate and restore settings, sessions, farm and dhikr", async () => {
   useSettingsStore.getState().setSetting("displayName", "Guest");
   useTasbihStore.getState().increment();
@@ -179,14 +191,12 @@ test("monthly analytics uses unique calendar months even on the 31st", (t) => {
 });
 
 test("preference hydration rejects invalid audio ranges and action replacements", () => {
-  useSettingsStore
-    .getState()
-    .hydrateFromCloud({
-      volume: 4,
-      surahNumber: 999,
-      setSetting: "invalid",
-      dashboard: { desktop: null },
-    } as unknown as Partial<SettingsSnapshot>);
+  useSettingsStore.getState().hydrateFromCloud({
+    volume: 4,
+    surahNumber: 999,
+    setSetting: "invalid",
+    dashboard: { desktop: null },
+  } as unknown as Partial<SettingsSnapshot>);
   assert.equal(useSettingsStore.getState().volume, 1);
   assert.equal(useSettingsStore.getState().surahNumber, 114);
   assert.equal(typeof useSettingsStore.getState().setSetting, "function");

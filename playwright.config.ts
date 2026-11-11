@@ -9,6 +9,13 @@ export default defineConfig({
     trace: "retain-on-failure",
     reducedMotion: "reduce",
   },
+  webServer: process.env.PLAYWRIGHT_BASE_URL
+    ? undefined
+    : {
+        command: "npm run start -- --port 3000",
+        url: "http://localhost:3000",
+        reuseExistingServer: !process.env.CI,
+      },
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
     { name: "firefox", use: { ...devices["Desktop Firefox"] } },

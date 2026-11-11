@@ -32,7 +32,9 @@ function PresetChip({
     <div
       className={cn(
         "group relative flex min-w-[11rem] max-w-full flex-col rounded-2xl border transition-colors sm:min-w-[14rem]",
-        selected ? "border-primary bg-primary-soft" : "border-border bg-card hover:bg-muted",
+        selected
+          ? "border-primary bg-primary-soft"
+          : "border-border bg-card hover:bg-muted",
       )}
     >
       <button
@@ -42,7 +44,9 @@ function PresetChip({
         className="flex w-full flex-col items-start rounded-2xl px-3.5 py-3 text-left focus-visible:outline-2 focus-visible:outline-ring"
       >
         <span className="text-sm font-medium">{name}</span>
-        <span className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{detail}</span>
+        <span className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+          {detail}
+        </span>
       </button>
       {onDelete && (
         <button
@@ -88,7 +92,13 @@ export function PresetManager() {
     addCustomPreset({ ...form, name: form.name.trim() });
     queueMicrotask(syncPreset);
     setShowForm(false);
-    setForm({ name: "", focusMinutes: 25, shortBreakMinutes: 5, longBreakMinutes: 15, sessionsBeforeLongBreak: 4 });
+    setForm({
+      name: "",
+      focusMinutes: 25,
+      shortBreakMinutes: 5,
+      longBreakMinutes: 15,
+      sessionsBeforeLongBreak: 4,
+    });
   };
 
   const numberField = (
@@ -106,15 +116,19 @@ export function PresetManager() {
         max={max}
         required
         value={form[key]}
-        onChange={(e) => setForm((f) => ({ ...f, [key]: Number(e.target.value) }))}
+        onChange={(e) =>
+          setForm((f) => ({ ...f, [key]: Number(e.target.value) }))
+        }
       />
     </div>
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="@container flex flex-col gap-4">
       {timerStatus !== "idle" && (
-        <p className="text-xs text-muted-foreground">{t("pomodoro.presetChangesIdle")}</p>
+        <p className="text-xs text-muted-foreground">
+          {t("pomodoro.presetChangesIdle")}
+        </p>
       )}
       <div className="flex flex-wrap gap-2">
         {BUILT_IN_PRESETS.map((p) => (
@@ -159,8 +173,8 @@ export function PresetManager() {
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <div className="grid grid-cols-1 gap-4 rounded-2xl border border-border bg-muted/50 p-4 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="flex flex-col gap-1.5 sm:col-span-2 lg:col-span-3">
+            <div className="grid grid-cols-1 gap-4 rounded-2xl border border-border bg-muted/50 p-4 @sm:grid-cols-2">
+              <div className="flex flex-col gap-1.5 @sm:col-span-2">
                 <Label htmlFor="preset-name">{t("pomodoro.presetName")}</Label>
                 <Input
                   id="preset-name"
@@ -168,13 +182,30 @@ export function PresetManager() {
                   required
                   maxLength={40}
                   value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, name: e.target.value }))
+                  }
                 />
               </div>
               {numberField(t("pomodoro.focusMinutes"), "focusMinutes", 5, 180)}
-              {numberField(t("pomodoro.shortBreakMinutes"), "shortBreakMinutes", 1, 60)}
-              {numberField(t("pomodoro.longBreakMinutes"), "longBreakMinutes", 5, 90)}
-              {numberField(t("pomodoro.sessionsBeforeLong"), "sessionsBeforeLongBreak", 1, 12)}
+              {numberField(
+                t("pomodoro.shortBreakMinutes"),
+                "shortBreakMinutes",
+                1,
+                60,
+              )}
+              {numberField(
+                t("pomodoro.longBreakMinutes"),
+                "longBreakMinutes",
+                5,
+                90,
+              )}
+              {numberField(
+                t("pomodoro.sessionsBeforeLong"),
+                "sessionsBeforeLongBreak",
+                1,
+                12,
+              )}
               <div className="flex items-end gap-2">
                 <Button type="submit">{t("pomodoro.savePreset")}</Button>
                 <Button variant="ghost" onClick={() => setShowForm(false)}>

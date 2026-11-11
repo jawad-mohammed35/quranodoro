@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { ProgressBackup } from "./progress-backup";
-import { DashboardSettings } from "./dashboard-settings";
+import Link from "next/link";
+import { useState } from "react";
 import { useTheme } from "next-themes";
 import { RECITERS } from "@/data/reciters";
 import { SURAHS } from "@/data/surahs";
@@ -57,6 +58,7 @@ export function SettingsView() {
   const { user } = useAuth();
   const { t } = useTranslation();
 
+  const [notice, setNotice] = useState("");
   const settings = useSettingsStore();
 
   if (!mounted) {
@@ -76,42 +78,25 @@ export function SettingsView() {
       />
 
       <div className="flex flex-col gap-6">
-        <DashboardSettings />
-        <ProgressBackup />
         <Card>
           <CardHeader>
-            <CardTitle>Session notifications</CardTitle>
-            <CardDescription>
-              Optional browser alerts when a focus session or break finishes.
-            </CardDescription>
+            <CardTitle>{t("settings.account")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <Button
-              variant="outline"
-              onClick={async () => {
-                if (settings.sessionNotifications) {
-                  settings.setSetting("sessionNotifications", false);
-                  return;
-                }
-                if (typeof Notification === "undefined") {
-                  window.alert("This browser does not support notifications.");
-                  return;
-                }
-                const permission = await Notification.requestPermission();
-                settings.setSetting(
-                  "sessionNotifications",
-                  permission === "granted",
-                );
-                if (permission !== "granted")
-                  window.alert(
-                    "Notifications are blocked. You can allow them in your browser's site settings.",
-                  );
-              }}
-            >
-              {settings.sessionNotifications
-                ? "Disable notifications"
-                : "Enable notifications"}
-            </Button>
+            {user ? (
+              <p className="text-sm text-muted-foreground">
+                {t("settings.signedInAs", { email: user.email ?? "" })}
+              </p>
+            ) : (
+              <div className="flex flex-col items-start gap-3">
+                <p className="text-sm text-muted-foreground">
+                  {t("settings.localOnly")}
+                </p>
+                <Button onClick={() => router.push("/register")}>
+                  {t("settings.createAccount")}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -182,6 +167,47 @@ export function SettingsView() {
           </CardContent>
         </Card>
 
+        <ProgressBackup />
+        <Card>
+          <CardHeader>
+            <CardTitle>Session notifications</CardTitle>
+            <CardDescription>
+              Optional browser alerts when a focus session or break finishes.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                setNotice("");
+                if (settings.sessionNotifications) {
+                  settings.setSetting("sessionNotifications", false);
+                  return;
+                }
+                if (typeof Notification === "undefined") {
+                  setNotice("This browser does not support notifications.");
+                  return;
+                }
+                const permission = await Notification.requestPermission();
+                settings.setSetting(
+                  "sessionNotifications",
+                  permission === "granted",
+                );
+                if (permission !== "granted")
+                  setNotice(
+                    "Notifications are blocked. You can allow them in your browser's site settings.",
+                  );
+              }}
+            >
+              {settings.sessionNotifications
+                ? "Disable notifications"
+                : "Enable notifications"}
+            </Button>
+            <p role="status" className="mt-2 text-sm text-muted-foreground">
+              {notice}
+            </p>
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader>
             <CardTitle>{t("settings.pomodoro")}</CardTitle>
@@ -321,27 +347,12 @@ export function SettingsView() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("settings.account")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {user ? (
-              <p className="text-sm text-muted-foreground">
-                {t("settings.signedInAs", { email: user.email ?? "" })}
-              </p>
-            ) : (
-              <div className="flex flex-col items-start gap-3">
-                <p className="text-sm text-muted-foreground">
-                  {t("settings.localOnly")}
-                </p>
-                <Button onClick={() => router.push("/register")}>
-                  {t("settings.createAccount")}
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <Link
+          href="/settings/about"
+          className="glass-surface flex items-center justify-between rounded-card border border-border p-6 font-semibold"
+        >
+          {t("nav.aboutDeveloper")} <span aria-hidden>→</span>
+        </Link>
       </div>
     </>
   );

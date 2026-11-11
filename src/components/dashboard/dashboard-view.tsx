@@ -201,7 +201,7 @@ function WeeklySummary() {
                   className="w-full max-w-8 rounded-t-md bg-primary/80"
                   initial={{ height: 0 }}
                   animate={{
-                    height: `${Math.max(4, (day.focusMinutes / max) * 96)}px`,
+                    height: `max(4px, calc(clamp(40px, 30cqh, 105px) * ${day.focusMinutes / max}))`,
                   }}
                   transition={{ duration: 0.5, ease: "easeOut" }}
                   title={`${day.date}: ${formatDuration(day.focusMinutes)}`}

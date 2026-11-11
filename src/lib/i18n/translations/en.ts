@@ -57,8 +57,8 @@ export const en = {
     tasbih: "Tasbih",
   },
   dashboard: {
-    title: "Assalamu alaikum",
-    titleWithName: "Assalamu alaikum, {name}",
+    title: "Assalamu Alaikum",
+    titleWithName: "Assalamu Alaikum, {name}",
     description: "Here's how your focus is growing.",
     todaysFocus: "Today's focus",
     pomodorosToday: "{count} Pomodoros completed today",
@@ -86,13 +86,15 @@ export const en = {
     autoStartNext: "Auto-start next session",
     playQuranDuringFocus: "Play Quran during focus",
     untilLongBreak: "until long break",
-    focusSessionsUntilLongBreak: "{current} of {total} focus sessions until the long break",
+    focusSessionsUntilLongBreak:
+      "{current} of {total} focus sessions until the long break",
     noTreeGrowing: "No tree is growing.",
     plantInFarm: "Plant one in your farm",
     earnGpPerSession: "to earn +{gp} GP per session.",
     treeGrowing: "is growing — finish to earn +{gp} GP",
     earnsGpPerSession: "earns +{gp} GP per completed focus session",
-    presetChangesIdle: "Preset changes apply when the current cycle ends or is stopped.",
+    presetChangesIdle:
+      "Preset changes apply when the current cycle ends or is stopped.",
     customPreset: "Custom preset",
     presetName: "Preset name",
     presetNamePlaceholder: "e.g. Morning Hifz",
@@ -112,19 +114,22 @@ export const en = {
   },
   settings: {
     title: "Settings",
-    description: "Tune Quranodoro to your rhythm. Everything saves automatically.",
+    description:
+      "Tune Quranodoro to your rhythm. Everything saves automatically.",
     profile: "Profile",
     yourName: "Your name",
     yourNameHint: "Used for the greeting on your dashboard.",
     yourNamePlaceholder: "e.g. Jawad",
     appearance: "Appearance",
     theme: "Theme",
-    themeHint: "Light is warm and pastel; dark is soft charcoal. Light is the default.",
+    themeHint:
+      "Light is warm and pastel; dark is soft charcoal. Light is the default.",
     themeLight: "Light",
     themeDark: "Dark",
     themeSystem: "Match system",
     language: "Language",
-    languageHint: "Changes the app interface language. Quran text and audio stay unchanged.",
+    languageHint:
+      "Changes the app interface language. Quran text and audio stay unchanged.",
     pomodoro: "Pomodoro",
     autoStartNext: "Auto-start next session",
     autoStartHint:
@@ -187,7 +192,8 @@ export const en = {
     removeFavorite: "Remove from favorites",
     noResults: "No surahs match your search.",
     noResultsQuery: 'No surahs match "{query}".',
-    pageDescription: "Choose a reciter and surah. Recitation continues while you move around the app.",
+    pageDescription:
+      "Choose a reciter and surah. Recitation continues while you move around the app.",
   },
   farm: {
     title: "Date Farm",

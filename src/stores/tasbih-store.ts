@@ -55,7 +55,7 @@ export const useTasbihStore = create<TasbihState>()(
       increment: () => {
         const { count, target } = get();
         const next = count + 1;
-        if (next >= target) {
+        if (next === target) {
           const completion: TasbihCompletion = {
             id: uid(),
             completedAt: new Date().toISOString(),
@@ -63,7 +63,7 @@ export const useTasbihStore = create<TasbihState>()(
             phrase: get().phrase,
           };
           set({
-            count: 0,
+            count: next,
             justCompleted: true,
             completedSessions: [...get().completedSessions, completion],
           });
@@ -77,7 +77,7 @@ export const useTasbihStore = create<TasbihState>()(
       setTarget: (target) => {
         if (!Number.isFinite(target)) return;
         const safe = Math.max(1, Math.min(9999, Math.floor(target)));
-        set({ target: safe, count: 0, justCompleted: false });
+        set({ target: safe, justCompleted: false });
       },
 
       startNewSession: () => set({ count: 0, justCompleted: false }),

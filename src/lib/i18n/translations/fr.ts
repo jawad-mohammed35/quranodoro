@@ -55,8 +55,8 @@ export const fr: TranslationSchema = {
     tasbih: "Tasbih",
   },
   dashboard: {
-    title: "Assalamu alaikum",
-    titleWithName: "Assalamu alaikum, {name}",
+    title: "Assalamu Alaikum",
+    titleWithName: "Assalamu Alaikum, {name}",
     description: "Voici comment votre concentration progresse.",
     todaysFocus: "Focus du jour",
     pomodorosToday: "{count} Pomodoros terminés aujourd'hui",
@@ -112,14 +112,16 @@ export const fr: TranslationSchema = {
   },
   settings: {
     title: "Paramètres",
-    description: "Adaptez Quranodoro à votre rythme. Tout est sauvegardé automatiquement.",
+    description:
+      "Adaptez Quranodoro à votre rythme. Tout est sauvegardé automatiquement.",
     profile: "Profil",
     yourName: "Votre nom",
     yourNameHint: "Utilisé pour la salutation sur votre tableau de bord.",
     yourNamePlaceholder: "ex. Jawad",
     appearance: "Apparence",
     theme: "Thème",
-    themeHint: "Clair est chaleureux et pastel ; sombre est charbon doux. Clair par défaut.",
+    themeHint:
+      "Clair est chaleureux et pastel ; sombre est charbon doux. Clair par défaut.",
     themeLight: "Clair",
     themeDark: "Sombre",
     themeSystem: "Suivre le système",
@@ -145,7 +147,8 @@ export const fr: TranslationSchema = {
     favoriteSurahsHint:
       "Recherchez et sélectionnez ci-dessous, ou appuyez sur le cœur dans le Lecteur Coran.",
     account: "Compte",
-    signedInAs: "Connecté en tant que {email}. Vos données se synchronisent automatiquement.",
+    signedInAs:
+      "Connecté en tant que {email}. Vos données se synchronisent automatiquement.",
     localOnly:
       "Vous utilisez Quranodoro sur cet appareil uniquement. Créez un compte pour sauvegarder et synchroniser.",
     createAccount: "Créer un compte",
@@ -177,7 +180,8 @@ export const fr: TranslationSchema = {
   },
   quran: {
     title: "Lecteur Coran",
-    description: "Parcourez les sourates, choisissez un récitateur et écoutez avec intention.",
+    description:
+      "Parcourez les sourates, choisissez un récitateur et écoutez avec intention.",
     nowPlaying: "En lecture",
     surahList: "Sourates",
     allSurahs: "Toutes les sourates",
@@ -187,13 +191,14 @@ export const fr: TranslationSchema = {
     addFavorite: "Ajouter aux favoris",
     removeFavorite: "Retirer des favoris",
     noResults: "Aucune sourate ne correspond à votre recherche.",
-    noResultsQuery: 'Aucune sourate ne correspond à « {query} ».',
+    noResultsQuery: "Aucune sourate ne correspond à « {query} ».",
     pageDescription:
       "Choisissez un récitateur et une sourate. La récitation continue pendant votre navigation.",
   },
   farm: {
     title: "Ferme de dattes",
-    description: "Faites pousser des palmiers avec chaque session de focus terminée.",
+    description:
+      "Faites pousser des palmiers avec chaque session de focus terminée.",
     nowGrowing: "En croissance",
     growingActive: "Votre arbre profite de cette session de focus.",
     growingIdle: "Commencez une session de focus pour faire grandir cet arbre.",

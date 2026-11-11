@@ -40,9 +40,10 @@ test("dashboard hides, restores, resizes and persists panels", async ({
   await expect(panel).toHaveCount(0);
   await page.reload();
   await expect(panel).toHaveCount(0);
-  await page.goto("/settings#dashboard");
-  await page.getByLabel("Today's focus", { exact: true }).check();
-  await page.goto("/");
+  await page.getByRole("button", { name: "Edit dashboard" }).click();
+  await page.getByRole("button", { name: "Add Widgets" }).click();
+  await page.getByRole("button", { name: "Add Today's focus" }).click();
+  await page.reload();
   await expect(panel).toBeVisible();
 });
 test("dashboard drag and keyboard reorder save layout", async ({ page }) => {
@@ -73,9 +74,7 @@ test("dashboard drag and keyboard reorder save layout", async ({ page }) => {
       ),
     )
     .not.toEqual(initial);
-  await page
-    .getByRole("button", { name: "Move Today's focus later", exact: true })
-    .click();
+  await handle.press("ArrowDown");
   const saved = await page.evaluate(
     () =>
       JSON.parse(localStorage.getItem("quranodoro-settings:guest")!).state
@@ -106,8 +105,9 @@ test("tasbih persists count, confirms reset, and offers 100 target", async ({
       ),
     )
     .toBe(1);
-  page.once("dialog", (dialog) => dialog.dismiss());
+  await page.getByRole("button", { name: "33", exact: true }).click();
   await page.getByRole("button", { name: /reset counter/i }).click();
+  await page.getByRole("button", { name: "Cancel" }).click();
   expect(
     await page.evaluate(
       () =>
@@ -127,21 +127,26 @@ test("timer survives reload, pauses, resumes, and stops", async ({ page }) => {
     page.getByRole("button", { name: "Start focus", exact: true }),
   ).toBeVisible();
 });
-test("settings reset requires confirmation and preserves progress", async ({
+test("dashboard reset restores defaults across both layouts", async ({
   page,
 }) => {
-  await page.goto("/settings");
-  await page.getByLabel("Current streak", { exact: true }).uncheck();
-  page.once("dialog", (dialog) => dialog.dismiss());
-  await page.getByRole("button", { name: "Restore default layout" }).click();
-  await expect(
-    page.getByLabel("Current streak", { exact: true }),
-  ).not.toBeChecked();
-  page.once("dialog", (dialog) => dialog.accept());
-  await page.getByRole("button", { name: "Restore default layout" }).click();
-  await expect(
-    page.getByLabel("Current streak", { exact: true }),
-  ).toBeChecked();
+  await page.goto("/");
+  await page.getByRole("button", { name: "Edit dashboard" }).click();
+  await page.getByRole("button", { name: "Hide Current streak" }).click();
+  await page.getByRole("button", { name: "Reset Layout" }).click();
+  await page.keyboard.press("Escape");
+  await expect(page.locator('[data-panel="streak"]')).toHaveCount(0);
+  await page.getByRole("button", { name: "Reset Layout" }).click();
+  await page.getByRole("button", { name: "Confirm", exact: true }).click();
+  await page.reload();
+  await expect(page.locator('[data-panel="streak"]')).toBeVisible();
+  expect(
+    await page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("quranodoro-settings:guest")!).state
+          .dashboard,
+    ),
+  ).toEqual(defaultDashboard());
 });
 test("all routes fit representative widths and navigation has active solid icon", async ({
   page,
@@ -344,4 +349,68 @@ test("dashboard touch drag persists the mobile arrangement", async ({
     )
     .not.toBeNull();
   await context.close();
+});
+
+test("half-screen menu anchors to its trigger and navigates into Settings", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.setViewportSize({ width: 800, height: 700 });
+  await page.goto("/");
+  const trigger = page.getByRole("button", { name: "Open menu" });
+  const anchor = await trigger.boundingBox();
+  await trigger.click();
+  const menu = page.getByRole("dialog", { name: "Navigation" });
+  await expect(menu).toBeVisible();
+  const bounds = await menu.boundingBox();
+  expect(bounds!.y).toBeGreaterThanOrEqual(anchor!.y + anchor!.height);
+  expect(
+    Math.abs(bounds!.x + bounds!.width - anchor!.x - anchor!.width),
+  ).toBeLessThan(5);
+  await menu.getByRole("link", { name: "Settings", exact: true }).click();
+  await expect(menu).toHaveCount(0);
+  await expect(page.locator("main h3").nth(0)).toHaveText("Account");
+  await expect(page.locator("main h3").nth(1)).toHaveText("Profile");
+  await expect(page.locator("main h3").nth(2)).toHaveText("Appearance");
+  await page.getByRole("link", { name: "About the Developer" }).click();
+  await expect(page).toHaveURL(/settings\/about$/);
+  await page
+    .locator("main")
+    .getByRole("link", { name: /Settings/ })
+    .click();
+  await expect(page).toHaveURL(/settings$/);
+  await page.goto("/about");
+  await expect(page).toHaveURL(/settings\/about$/);
+  expect(errors).toEqual([]);
+});
+
+test("desktop presets follow recitation and dark pages share the scroll background", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 850 });
+  await page.goto("/pomodoro");
+  const card = (title: string) =>
+    page.getByRole("heading", { name: title, exact: true }).locator("../..");
+  const player = await card("Recitation").boundingBox();
+  const presets = await card("Presets").boundingBox();
+  expect(presets!.x).toBe(player!.x);
+  expect(presets!.y - player!.y - player!.height).toBeCloseTo(24, 0);
+  await page.getByRole("button", { name: "Switch to dark mode" }).click();
+  for (const route of ["/settings", "/"]) {
+    await page.goto(route);
+    await expect(page.locator("html")).toHaveClass(/dark/);
+    for (const position of [0, 500, 1500]) {
+      const background = await page.evaluate((y) => {
+        window.scrollTo({ top: y, behavior: "instant" });
+        return [
+          getComputedStyle(document.body).backgroundColor,
+          getComputedStyle(document.documentElement).backgroundColor,
+          getComputedStyle(document.body).backgroundImage,
+        ];
+      }, position);
+      expect(background[0]).toBe(background[1]);
+      expect(background[2]).toBe("none");
+    }
+  }
 });

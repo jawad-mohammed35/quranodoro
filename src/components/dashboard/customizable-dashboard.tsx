@@ -1,11 +1,18 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import Link from "next/link";
-import GridLayout, { useContainerWidth, type Layout } from "react-grid-layout";
-import { GripVertical, X, ArrowUp, ArrowDown } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import GridLayout, {
+  useContainerWidth,
+  verticalCompactor,
+  moveElement,
+  type Layout,
+} from "react-grid-layout";
+import { GripVertical, X } from "lucide-react";
 import {
   DASHBOARD_PANELS,
+  defaultDashboard,
+  panelLimits,
   normalizeDashboard,
   type PanelId,
 } from "@/lib/dashboard";
@@ -18,6 +25,8 @@ export function CustomizableDashboard({
   panels: Record<PanelId, ReactNode>;
 }) {
   const [editing, setEditing] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
   const { width, containerRef, mounted } = useContainerWidth({
     measureBeforeMount: true,
   });
@@ -30,8 +39,7 @@ export function CustomizableDashboard({
   );
   const layout = visible.map((p) => ({
     ...p,
-    minW: mode === "mobile" ? 1 : 4,
-    minH: DASHBOARD_PANELS.find((d) => d.id === p.i)!.h,
+    ...panelLimits(p.i, mode),
   }));
   function save(next: Layout) {
     const current = normalizeDashboard(useSettingsStore.getState().dashboard);
@@ -49,52 +57,96 @@ export function CustomizableDashboard({
     });
     setSetting("dashboard", { ...current, [mode]: changed });
   }
-  function move(id: string, direction: number) {
-    const sorted = [...visible].sort((a, b) => a.y - b.y || a.x - b.x);
-    const index = sorted.findIndex((p) => p.i === id);
-    const other = sorted[index + direction];
-    if (!other) return;
-    [sorted[index], sorted[index + direction]] = [other, sorted[index]];
-    let y = 0;
-    save(
-      sorted.map((p) => {
-        const item = { ...p, x: 0, y };
-        y += p.h;
-        return item;
-      }),
-    );
+  function restore(id: PanelId) {
+    const current = normalizeDashboard(useSettingsStore.getState().dashboard);
+    if (!current.hidden.includes(id)) return;
+    for (const size of ["desktop", "mobile"] as const) {
+      const active = current[size].filter(
+        (p) => !current.hidden.includes(p.i as PanelId),
+      );
+      const bottom = Math.max(0, ...active.map((p) => p.y + p.h));
+      current[size] = current[size].map((p) =>
+        p.i === id ? { ...p, y: bottom } : p,
+      );
+    }
+    setSetting("dashboard", {
+      ...current,
+      hidden: current.hidden.filter((i) => i !== id),
+    });
   }
   return (
     <div ref={containerRef} className="min-w-0 max-w-full">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-muted-foreground" aria-live="polite">
           {editing
-            ? "Drag a handle to move; drag a corner to resize. On a focused handle, use Shift + arrow keys to resize. Changes save automatically."
+            ? "Drag a handle to move or a corner to resize. Use arrow keys on a handle to move, or Shift + arrows to resize. Changes save automatically."
             : "Your space for focus, remembrance, and growth."}
         </p>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/settings#dashboard"
-            className="text-sm text-primary underline-offset-4 hover:underline"
-          >
-            Panel settings
-          </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          {editing && (
+            <>
+              <Button
+                variant="outline"
+                aria-expanded={adding}
+                onClick={() => setAdding(!adding)}
+              >
+                Add Widgets
+              </Button>
+              <Button variant="outline" onClick={() => setResetOpen(true)}>
+                Reset Layout
+              </Button>
+            </>
+          )}
           <Button
             variant="outline"
-            onClick={() => setEditing(!editing)}
+            onClick={() => {
+              setEditing(!editing);
+              setAdding(false);
+            }}
             aria-pressed={editing}
           >
             {editing ? "Done editing" : "Edit dashboard"}
           </Button>
         </div>
       </div>
+      <ConfirmDialog
+        open={resetOpen}
+        onDismiss={() => setResetOpen(false)}
+        title="Reset dashboard layout?"
+        description="Restore the default widget sizes, positions and visibility on every screen size."
+        onConfirm={() => {
+          setSetting("dashboard", defaultDashboard());
+          setAdding(false);
+        }}
+      />
+      {editing && adding && (
+        <section
+          aria-label="Hidden widgets"
+          className="glass-surface mb-4 flex flex-wrap items-center gap-2 rounded-card border border-border p-4"
+        >
+          {prefs.hidden.length ? (
+            DASHBOARD_PANELS.filter((p) => prefs.hidden.includes(p.id)).map(
+              (p) => (
+                <Button
+                  key={p.id}
+                  variant="outline"
+                  onClick={() => restore(p.id)}
+                >
+                  Add {p.label}
+                </Button>
+              ),
+            )
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              All widgets are on your dashboard.
+            </p>
+          )}
+        </section>
+      )}
       {visible.length === 0 && (
         <p className="rounded-card border border-border p-8 text-center">
-          All panels are hidden. Restore them in{" "}
-          <Link href="/settings#dashboard" className="text-primary underline">
-            Settings
-          </Link>
-          .
+          All widgets are hidden. Choose Add Widgets in Edit Dashboard to
+          restore them.
         </p>
       )}
       {mounted && (
@@ -131,66 +183,41 @@ export function CustomizableDashboard({
                       className="panel-drag-handle flex min-h-10 min-w-0 flex-1 touch-none cursor-grab items-center gap-1 text-left text-xs"
                       aria-label={`Drag ${label}`}
                       onKeyDown={(e) => {
-                        if (
-                          !e.shiftKey ||
-                          ![
-                            "ArrowUp",
-                            "ArrowDown",
-                            "ArrowLeft",
-                            "ArrowRight",
-                          ].includes(e.key)
-                        )
-                          return;
+                        const dx =
+                          Number(e.key === "ArrowRight") -
+                          Number(e.key === "ArrowLeft");
+                        const dy =
+                          Number(e.key === "ArrowDown") -
+                          Number(e.key === "ArrowUp");
+                        if (!dx && !dy) return;
                         e.preventDefault();
-                        save(
-                          visible.map((p) =>
-                            p.i !== item.i
-                              ? p
-                              : {
-                                  ...p,
-                                  w: Math.max(
-                                    mode === "mobile" ? 1 : 4,
-                                    Math.min(
-                                      mode === "mobile" ? 1 : 12,
-                                      p.w +
-                                        (e.key === "ArrowRight"
-                                          ? 1
-                                          : e.key === "ArrowLeft"
-                                            ? -1
-                                            : 0),
-                                    ),
-                                  ),
-                                  h: Math.max(
-                                    DASHBOARD_PANELS.find((d) => d.id === p.i)!
-                                      .h,
-                                    p.h +
-                                      (e.key === "ArrowDown"
-                                        ? 1
-                                        : e.key === "ArrowUp"
-                                          ? -1
-                                          : 0),
-                                  ),
-                                },
-                          ),
-                        );
+                        const cols = mode === "mobile" ? 1 : 12;
+                        const items = layout.map((p) => ({ ...p }));
+                        const p = items.find((p) => p.i === item.i)!;
+                        if (e.shiftKey) {
+                          p.w = Math.max(
+                            p.minW,
+                            Math.min(p.maxW, cols - p.x, p.w + dx),
+                          );
+                          p.h = Math.max(p.minH, Math.min(p.maxH, p.h + dy));
+                          save(verticalCompactor.compact(items, cols));
+                        } else {
+                          const moved = moveElement(
+                            items,
+                            p,
+                            Math.max(0, Math.min(cols - p.w, p.x + dx)),
+                            Math.max(0, p.y + dy),
+                            true,
+                            false,
+                            "vertical",
+                            cols,
+                          );
+                          save(verticalCompactor.compact(moved, cols));
+                        }
                       }}
                     >
                       <GripVertical className="h-4 w-4 shrink-0" />
                       <span className="truncate">{label}</span>
-                    </button>
-                    <button
-                      className="p-2"
-                      aria-label={`Move ${label} earlier`}
-                      onClick={() => move(item.i, -1)}
-                    >
-                      <ArrowUp size={16} />
-                    </button>
-                    <button
-                      className="p-2"
-                      aria-label={`Move ${label} later`}
-                      onClick={() => move(item.i, 1)}
-                    >
-                      <ArrowDown size={16} />
                     </button>
                     <button
                       className="p-2"
